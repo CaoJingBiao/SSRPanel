@@ -52,7 +52,7 @@ class TicketController extends Controller
 
             if ($obj->id) {
                 // 将工单置为已回复
-                $ticket = Ticket::query()->where('id', $id)->first();
+                $ticket = Ticket::query()->with(['user'])->where('id', $id)->first();
                 $ticket->status = 1;
                 $ticket->save();
 
@@ -72,10 +72,10 @@ class TicketController extends Controller
                     }
                 } else {
                     try {
-                        Mail::to($user['username'])->send(new replyTicket(self::$config['website_name'], $title, $content));
-                        $this->sendEmailLog(1, $title, $content);
+                        Mail::to($ticket->user->username)->send(new replyTicket(self::$config['website_name'], $title, $content));
+                        $this->sendEmailLog($ticket->user_id, $title, $content);
                     } catch (\Exception $e) {
-                        $this->sendEmailLog(1, $title, $content, 0, $e->getMessage());
+                        $this->sendEmailLog($ticket->user_id, $title, $content, 0, $e->getMessage());
                     }
                 }
 
@@ -106,9 +106,8 @@ class TicketController extends Controller
     public function closeTicket(Request $request)
     {
         $id = $request->get('id');
-        $user = $request->session()->get('user');
 
-        $ticket = Ticket::query()->where('id', $id)->first();
+        $ticket = Ticket::query()->with(['user'])->where('id', $id)->first();
         $ticket->status = 2;
         $ret = $ticket->save();
         if (!$ret) {
@@ -119,34 +118,11 @@ class TicketController extends Controller
         $content = "工单【" . $ticket->title . "】已关闭";
 
         // 发邮件通知用户
-        if (self::$config['crash_warning_email']) {
-            try {
-                Mail::to($user['username'])->send(new closeTicket(self::$config['website_name'], $title, $content));
-                $this->sendEmailLog(1, $title, $content);
-            } catch (\Exception $e) {
-                $this->sendEmailLog(1, $title, $content, 0, $e->getMessage());
-            }
-        }
-
-        // 发邮件通知管理员
-        if (self::$config['crash_warning_email']) {
-            try {
-                Mail::to(self::$config['crash_warning_email'])->send(new closeTicket(self::$config['website_name'], $title, $content));
-                $this->sendEmailLog(1, $title, $content);
-            } catch (\Exception $e) {
-                $this->sendEmailLog(1, $title, $content, 0, $e->getMessage());
-            }
-        }
-
-        // 通过ServerChan发微信消息提醒管理员
-        if (self::$config['is_server_chan'] && self::$config['server_chan_key']) {
-            $serverChan = new ServerChan();
-            $result = $serverChan->send($title, $content, self::$config['server_chan_key']);
-            if ($result->errno > 0) {
-                $this->sendEmailLog(1, '[ServerChan]' . $title, $content);
-            } else {
-                $this->sendEmailLog(1, '[ServerChan]' . $title, $content, 0, $result->errmsg);
-            }
+        try {
+            Mail::to($ticket->user->username)->send(new closeTicket(self::$config['website_name'], $title, $content));
+            $this->sendEmailLog($ticket->user_id, $title, $content);
+        } catch (\Exception $e) {
+            $this->sendEmailLog($ticket->user_id, $title, $content, 0, $e->getMessage());
         }
 
         return Response::json(['status' => 'success', 'data' => '', 'message' => '关闭成功']);
