@@ -37,6 +37,13 @@
 <!-- END LOGO -->
 <!-- BEGIN LOGIN -->
 <div class="content">
+    <nav style="padding-bottom: 20px;text-align: center;">
+        @if(app()->getLocale() == 'zh-CN')
+            <a href="{{url('lang', ['locale' => 'en'])}}">English</a>
+        @else
+            <a href="{{url('lang', ['locale' => 'zh-CN'])}}">中文</a>
+        @endif
+    </nav>
     <!-- BEGIN REGISTRATION FORM -->
     <form class="register-form" action="{{url('register')}}" method="post" style="display: block;">
         @if($is_register)
@@ -66,7 +73,7 @@
                     <label class="control-label visible-ie8 visible-ie9">{{trans('register.code')}}</label>
                     <input class="form-control placeholder-no-fix" type="text" autocomplete="off" placeholder="{{trans('register.code')}}" name="code" value="{{Request::old('code') ? Request::old('code') : Request::get('code')}}" required />
                 </div>
-                <p class="hint"> <a href="{{url('free')}}" target="_blank">获取免费邀请码</a> </p>
+                <p class="hint"> <a href="{{url('free')}}" target="_blank">{{trans('register.get_free_code')}}</a> </p>
             @endif
             @if($is_captcha)
             <div class="form-group" style="margin-bottom:75px;">
@@ -103,12 +110,10 @@
 <script src="/assets/global/plugins/excanvas.min.js"></script>
 <script src="/assets/global/plugins/ie8.fix.min.js"></script>
 <![endif]-->
-<!-- BEGIN CORE PLUGINS -->
 <script src="/assets/global/plugins/jquery.min.js" type="text/javascript"></script>
 <script src="/assets/global/plugins/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
-<!-- END CORE PLUGINS -->
-<!-- BEGIN PAGE LEVEL PLUGINS -->
-<!-- END PAGE LEVEL PLUGINS -->
+<script src="/assets/global/scripts/app.min.js" type="text/javascript"></script>
+<script src="/js/layer/layer.js" type="text/javascript"></script>
 <script type="text/javascript">
     // 登录
     function login() {
@@ -139,10 +144,10 @@
         });
     }
 </script>
-<!-- BEGIN THEME GLOBAL SCRIPTS -->
-<script src="/assets/global/scripts/app.min.js" type="text/javascript"></script>
-<script src="/js/layer/layer.js" type="text/javascript"></script>
-<!-- END THEME GLOBAL SCRIPTS -->
+<!-- 统计 -->
+{!! $website_analytics !!}
+<!-- 客服 -->
+{!! $website_customer_service !!}
 </body>
 
 </html>

@@ -14,22 +14,29 @@
                 <!-- BEGIN PORTLET-->
                 <div class="portlet light bordered">
                     <div class="portlet-body">
-                        <div class="table-scrollable">
-                            <table class="table table-hover table-striped table-bordered">
+                        <div class="table-scrollable table-scrollable-borderless">
+                            <table class="table table-hover table-light">
                                 <thead>
-                                    <tr>
-                                        <th>节点</th>
-                                        <th>配置信息</th>
+                                    <tr class="uppercase">
+                                        <th style="width: 10%;">#</th>
+                                        <th style="width: 15%;">节点</th>
+                                        <th style="width: 15%;">域名</th>
+                                        <th style="width: 15%;">IPv4</th>
+                                        <th style="width: 45%;">配置信息</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($nodeList as $node)
+                                    @foreach($nodeList as $k => $node)
                                         <tr>
+                                            <td>{{$k + 1}}</td>
                                             <td>
                                                 {{$node->name}}
                                                 @if($node->compatible) <span class="label label-info">兼</span> @endif
                                                 @if($node->single) <span class="label label-danger">单</span> @endif
+                                                @if($node->ipv6) <span class="label label-danger">IPv6</span> @endif
                                             </td>
+                                            <td>{{$node->server}}</td>
+                                            <td>{{$node->ip}}</td>
                                             <td>
                                                 <a class="btn btn-sm green btn-outline" data-toggle="modal" href="#txt_{{$node->id}}"> 文本 </a>
                                                 <a class="btn btn-sm green btn-outline" data-toggle="modal" href="#scheme_{{$node->id}}"> SCHEME </a>
@@ -128,6 +135,7 @@
             var n = function () {
                 @foreach($nodeList as $node)
                     $("#txt_{{$node->id}}").draggable({handle: ".modal-header"});
+                    $("#txt_v6_{{$node->id}}").draggable({handle: ".modal-header"});
                     $("#scheme_{{$node->id}}").draggable({handle: ".modal-header"});
                     $("#qrcode_{{$node->id}}").draggable({handle: ".modal-header"});
                 @endforeach

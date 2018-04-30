@@ -43,6 +43,9 @@
                                         <li>
                                             <a href="#tab_7" data-toggle="tab"> 有赞云设置 </a>
                                         </li>
+                                        <li>
+                                            <a href="#tab_8" data-toggle="tab"> 客服、统计设置 </a>
+                                        </li>
                                     </ul>
                                 </div>
                                 <div class="portlet-body">
@@ -260,7 +263,6 @@
                                                             </div>
                                                         </div>
                                                     </div>
-
                                                     <div class="form-group">
                                                         <div class="col-md-6">
                                                             <label for="initial_labels_for_user" class="col-md-3 control-label">用户初始标签</label>
@@ -277,7 +279,18 @@
                                                                 <span class="help-block"> 注册用户时的初始标签 </span>
                                                             </div>
                                                         </div>
-                                                        <div class="col-md-6"></div>
+                                                        <div class="col-md-6">
+                                                            <label for="register_ip_limit" class="col-md-3 control-label">同IP注册限制</label>
+                                                            <div class="col-md-9">
+                                                                <div class="input-group">
+                                                                    <input class="form-control" type="text" name="register_ip_limit" value="{{$register_ip_limit}}" id="register_ip_limit" />
+                                                                    <span class="input-group-btn">
+                                                                        <button class="btn btn-success" type="button" onclick="setRegisterIpLimit()">修改</button>
+                                                                    </span>
+                                                                </div>
+                                                                <span class="help-block"> 同IP在24小时内允许注册数量，为0时不限制 </span>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </form>
@@ -574,7 +587,7 @@
                                                             <label for="is_youzan" class="col-md-3 control-label">本功能</label>
                                                             <div class="col-md-9">
                                                                 <input type="checkbox" class="make-switch" @if($is_youzan) checked @endif id="is_youzan" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
-                                                                <span class="help-block"> 启用前请先到<a href="https://console.youzanyun.com/dashboard">有赞云</a>申请client_id和client_secret并绑定店铺 </span>
+                                                                <span class="help-block"> 请先到<a href="https://console.youzanyun.com/dashboard">有赞云</a>申请client_id和client_secret并绑定店铺 </span>
                                                             </div>
                                                         </div>
                                                         <div class="col-md-6">
@@ -617,6 +630,27 @@
                                                 </div>
                                             </form>
                                         </div>
+                                        <div class="tab-pane" id="tab_8">
+                                            <form action="{{url('admin/setExtend')}}" method="post" class="form-horizontal" role="form" onsubmit="return submitExtend();">
+                                                <div class="form-group">
+                                                    <label for="website_analytics" class="col-md-2 control-label">统计代码</label>
+                                                    <div class="col-md-8">
+                                                        <textarea class="form-control" rows="10" name="website_analytics" id="website_analytics">{{$website_analytics}}</textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="website_customer_service" class="col-md-2 control-label">客服代码</label>
+                                                    <div class="col-md-8">
+                                                        <textarea class="form-control" rows="10" name="website_customer_service" id="website_customer_service">{{$website_customer_service}}</textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <div class="col-md-offset-2 col-md-10">
+                                                        <button type="submit" class="btn blue">提交</button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -637,6 +671,25 @@
     <script src="/js/layer/layer.js" type="text/javascript"></script>
 
     <script type="text/javascript">
+        // 设置客服、统计代码
+        function submitExtend() {
+            var website_analytics = $('#website_analytics').val();
+            var website_customer_service = $('#website_customer_service').val();
+
+            $.ajax({
+                type: "POST",
+                url: "{{url('admin/setExtend')}}",
+                async: false,
+                data: {_token:'{{csrf_token()}}', website_analytics:website_analytics, website_customer_service:website_customer_service},
+                dataType: 'json',
+                success: function (ret) {
+                    layer.msg(ret.message, {time:1000});
+                }
+            });
+
+            return false;
+        }
+
         $('#initial_labels_for_user').select2({
             placeholder: '设置后则可见相同标签的节点',
             allowClear: true,
@@ -1274,6 +1327,24 @@
             var subscribe_domain = $("#subscribe_domain").val();
 
             $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'subscribe_domain', value:subscribe_domain}, function (ret) {
+                layer.msg(ret.message, {time:1000}, function() {
+                    if (ret.status == 'fail') {
+                        window.location.reload();
+                    }
+                });
+            });
+        }
+
+        // 设置节点订阅随机展示节点数
+        function setRegisterIpLimit() {
+            var register_ip_limit = parseInt($("#register_ip_limit").val());
+
+            if (register_ip_limit < 0) {
+                layer.msg('不能小于0', {time:1000});
+                return ;
+            }
+
+            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'register_ip_limit', value:register_ip_limit}, function (ret) {
                 layer.msg(ret.message, {time:1000}, function() {
                     if (ret.status == 'fail') {
                         window.location.reload();

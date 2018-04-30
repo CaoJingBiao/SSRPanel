@@ -13,6 +13,7 @@ use Cache;
 /**
  * 登录控制器
  * Class LoginController
+ *
  * @package App\Http\Controllers
  */
 class LoginController extends Controller
@@ -125,6 +126,8 @@ class LoginController extends Controller
 
             $view['is_captcha'] = self::$config['is_captcha'];
             $view['is_register'] = self::$config['is_register'];
+            $view['website_analytics'] = self::$config['website_analytics'];
+            $view['website_customer_service'] = self::$config['website_customer_service'];
 
             return Response::view('login', $view);
         }

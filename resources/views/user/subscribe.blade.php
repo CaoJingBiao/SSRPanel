@@ -32,13 +32,17 @@
                     </div>
                     <div class="portlet-body form">
                         <div class="mt-clipboard-container">
-                            <input type="text" id="mt-target-1" class="form-control" value="{{$link}}" />
-                            <a href="javascript:exchangeSubscribe();" class="btn green">
-                                {{trans('home.exchange_subscribe')}}
-                            </a>
-                            <a href="javascript:;" class="btn blue mt-clipboard" data-clipboard-action="copy" data-clipboard-target="#mt-target-1">
-                                {{trans('home.copy_subscribe_address')}}
-                            </a>
+                            @if($subscribe_status)
+                                <input type="text" id="mt-target-1" class="form-control" value="{{$link}}" />
+                                <a href="javascript:exchangeSubscribe();" class="btn green">
+                                    {{trans('home.exchange_subscribe')}}
+                                </a>
+                                <a href="javascript:;" class="btn blue mt-clipboard" data-clipboard-action="copy" data-clipboard-target="#mt-target-1">
+                                    {{trans('home.copy_subscribe_address')}}
+                                </a>
+                            @else
+                                <span>{{trans('home.subscribe_baned')}}</span>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -56,7 +60,7 @@
     <script type="text/javascript">
         // 更换订阅地址
         function exchangeSubscribe() {
-            layer.confirm('确定更换订阅地址吗？', {icon: 7, title:'警告'}, function(index) {
+            layer.confirm('更换订阅地址将导致：<br>1.旧地址立即失效；<br>2.连接密码被更改；', {icon: 7, title:'警告'}, function(index) {
                 $.post("{{url('user/exchangeSubscribe')}}", {_token:'{{csrf_token()}}'}, function (ret) {
                     layer.msg(ret.message, {time:1000}, function () {
                         if (ret.status == 'success') {

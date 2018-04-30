@@ -24,37 +24,37 @@
 -- Table structure for `ss_node`
 -- ----------------------------
 CREATE TABLE `ss_node` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(128) NOT NULL DEFAULT '' COMMENT '名称',
-  `group_id` int(11) NOT NULL DEFAULT '0' COMMENT '所属分组',
-  `country_code` char(5) DEFAULT '' COMMENT '国家代码',
-  `server` varchar(255) DEFAULT '' COMMENT '服务器域名地址',
-  `ip` varchar(30) DEFAULT NULL COMMENT '服务器IP地址',
-  `desc` varchar(255) DEFAULT '' COMMENT '节点简单描述',
-  `method` varchar(32) NOT NULL DEFAULT 'aes-192-ctr' COMMENT '加密方式',
-  `protocol` varchar(128) NOT NULL DEFAULT 'auth_chain_a' COMMENT '协议',
-  `protocol_param` varchar(128) DEFAULT '' COMMENT '协议参数',
-  `obfs` varchar(128) NOT NULL DEFAULT 'tls1.2_ticket_auth' COMMENT '混淆',
-  `obfs_param` varchar(128) DEFAULT '' COMMENT '混淆参数',
-  `traffic_rate` float NOT NULL DEFAULT '1' COMMENT '流量比率',
-  `bandwidth` int(11) NOT NULL DEFAULT '100' COMMENT '出口带宽，单位M',
-  `traffic` bigint(20) NOT NULL DEFAULT '1000' COMMENT '每月可用流量，单位G',
-  `monitor_url` varchar(255) DEFAULT NULL COMMENT '监控地址',
-  `compatible` tinyint(4) DEFAULT '0' COMMENT '兼容SS',
-  `single` tinyint(4) DEFAULT '0' COMMENT '单端口多用户：0-否、1-是',
-  `single_force` tinyint(4) DEFAULT NULL COMMENT '模式：0-兼容模式、1-严格模式',
-  `single_port` varchar(50) DEFAULT '' COMMENT '端口号，用,号分隔',
-  `single_passwd` varchar(50) DEFAULT '' COMMENT '密码',
-  `single_method` varchar(50) DEFAULT '' COMMENT '加密方式',
-  `single_protocol` varchar(50) NOT NULL DEFAULT '' COMMENT '协议',
-  `single_obfs` varchar(50) NOT NULL DEFAULT '' COMMENT '混淆',
-  `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序值，值越大越靠前显示',
-  `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '状态：0-维护、1-正常',
-  `created_at` datetime NOT NULL,
-  `updated_at` datetime NOT NULL,
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(128) NOT NULL DEFAULT '' COMMENT '名称',
+  `group_id` INT(11) NOT NULL DEFAULT '0' COMMENT '所属分组',
+  `country_code` CHAR(5) NULL DEFAULT '' COMMENT '国家代码',
+  `server` VARCHAR(128) NULL DEFAULT NULL COMMENT '服务器域名地址',
+  `ip` CHAR(15) NULL DEFAULT NULL COMMENT '服务器IPV4地址',
+  `ipv6` CHAR(128) NULL DEFAULT NULL COMMENT '服务器IPV6地址',
+  `desc` VARCHAR(255) NULL DEFAULT '' COMMENT '节点简单描述',
+  `method` VARCHAR(32) NOT NULL DEFAULT 'aes-192-ctr' COMMENT '加密方式',
+  `protocol` VARCHAR(128) NOT NULL DEFAULT 'auth_chain_a' COMMENT '协议',
+  `protocol_param` VARCHAR(128) NULL DEFAULT '' COMMENT '协议参数',
+  `obfs` VARCHAR(128) NOT NULL DEFAULT 'tls1.2_ticket_auth' COMMENT '混淆',
+  `obfs_param` VARCHAR(128) NULL DEFAULT '' COMMENT '混淆参数',
+  `traffic_rate` FLOAT NOT NULL DEFAULT '1' COMMENT '流量比率',
+  `bandwidth` INT(11) NOT NULL DEFAULT '100' COMMENT '出口带宽，单位M',
+  `traffic` BIGINT(20) NOT NULL DEFAULT '1000' COMMENT '每月可用流量，单位G',
+  `monitor_url` VARCHAR(255) NULL DEFAULT NULL COMMENT '监控地址',
+  `compatible` TINYINT(4) NULL DEFAULT '0' COMMENT '兼容SS',
+  `single` TINYINT(4) NULL DEFAULT '0' COMMENT '单端口多用户：0-否、1-是',
+  `single_force` TINYINT(4) NULL DEFAULT NULL COMMENT '模式：0-兼容模式、1-严格模式',
+  `single_port` VARCHAR(50) NULL DEFAULT '' COMMENT '端口号，用,号分隔',
+  `single_passwd` VARCHAR(50) NULL DEFAULT '' COMMENT '密码',
+  `single_method` VARCHAR(50) NULL DEFAULT '' COMMENT '加密方式',
+  `single_protocol` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '协议',
+  `single_obfs` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '混淆',
+  `sort` INT(11) NOT NULL DEFAULT '0' COMMENT '排序值，值越大越靠前显示',
+  `status` TINYINT(4) NOT NULL DEFAULT '1' COMMENT '状态：0-维护、1-正常',
+  `created_at` DATETIME NOT NULL,
+  `updated_at` DATETIME NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='节点信息表';
-
 
 -- ----------------------------
 -- Table structure for `ss_node_info`
@@ -261,7 +261,7 @@ INSERT INTO `ss_config` VALUES ('37', 'auth_chain_f', '2', '0', '0', '2017-08-01
 CREATE TABLE `config` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL DEFAULT '' COMMENT '配置名',
-  `value` varchar(255) NOT NULL DEFAULT '' COMMENT '配置值',
+  `value` TEXT NULL COMMENT '配置值',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统配置';
 
@@ -323,6 +323,9 @@ INSERT INTO `config` VALUES ('51', 'youzan_client_id', '');
 INSERT INTO `config` VALUES ('52', 'youzan_client_secret', '');
 INSERT INTO `config` VALUES ('53', 'kdt_id', '');
 INSERT INTO `config` VALUES ('54', 'initial_labels_for_user', '');
+INSERT INTO `config` VALUES ('55', 'website_analytics', '');
+INSERT INTO `config` VALUES ('56', 'website_customer_service', '');
+INSERT INTO `config` VALUES ('57', 'register_ip_limit', 5);
 
 
 -- ----------------------------
@@ -482,12 +485,12 @@ CREATE TABLE `coupon_log` (
 -- ----------------------------
 CREATE TABLE `order` (
   `oid` int(11) NOT NULL AUTO_INCREMENT,
-  `orderId` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '订单编号',
+  `order_sn` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '订单编号',
   `user_id` int(11) NOT NULL DEFAULT '0' COMMENT '操作人',
   `goods_id` int(11) NOT NULL DEFAULT '0' COMMENT '商品ID',
   `coupon_id` int(11) NOT NULL DEFAULT '0' COMMENT '优惠券ID',
-  `totalOriginalPrice` int(11) NOT NULL DEFAULT '0' COMMENT '订单原始总价，单位分',
-  `totalPrice` int(11) NOT NULL DEFAULT '0' COMMENT '订单总价，单位分',
+  `origin_amount` int(11) NOT NULL DEFAULT '0' COMMENT '订单原始总价，单位分',
+  `amount` int(11) NOT NULL DEFAULT '0' COMMENT '订单总价，单位分',
   `expire_at` datetime DEFAULT NULL COMMENT '过期时间',
   `is_expire` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否已过期：0-未过期、1-已过期',
   `pay_way` tinyint(4) NOT NULL DEFAULT '1' COMMENT '支付方式：1-余额支付、2-有赞云支付',
@@ -504,11 +507,11 @@ CREATE TABLE `order` (
 CREATE TABLE `order_goods` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `oid` int(11) NOT NULL DEFAULT '0' COMMENT '订单ID',
-  `orderId` varchar(20) NOT NULL DEFAULT '' COMMENT '订单编号',
+  `order_sn` varchar(20) NOT NULL DEFAULT '' COMMENT '订单编号',
   `user_id` int(11) NOT NULL DEFAULT '0' COMMENT '用户ID',
   `goods_id` int(11) NOT NULL DEFAULT '0' COMMENT '商品ID',
   `num` int(11) NOT NULL DEFAULT '0' COMMENT '商品数量',
-  `original_price` int(11) NOT NULL DEFAULT '0' COMMENT '商品原价，单位分',
+  `origin_price` int(11) NOT NULL DEFAULT '0' COMMENT '商品原价，单位分',
   `price` int(11) NOT NULL DEFAULT '0' COMMENT '商品实际价格，单位分',
   `is_expire` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否已过期：0-未过期、1-已过期',
   `created_at` datetime DEFAULT NULL COMMENT '创建时间',
@@ -757,6 +760,20 @@ CREATE TABLE `user_label` (
 
 
 -- ----------------------------
+-- Table structure for `goods_label`
+-- ----------------------------
+CREATE TABLE `goods_label` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `goods_id` INT(11) NOT NULL DEFAULT '0' COMMENT '商品ID',
+  `label_id` INT(11) NOT NULL DEFAULT '0' COMMENT '标签ID',
+  PRIMARY KEY (`id`),
+  INDEX `idx` (`goods_id`, `label_id`),
+  INDEX `idx_goods_id` (`goods_id`),
+  INDEX `idx_label_id` (`label_id`)
+) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE='utf8mb4_unicode_ci' COMMENT='商品标签';
+
+
+-- ----------------------------
 -- Table structure for `country`
 -- ----------------------------
 CREATE TABLE `country` (
@@ -834,7 +851,7 @@ CREATE TABLE `payment` (
   `sn` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `user_id` int(11) NOT NULL COMMENT '用户ID',
   `oid` int(11) DEFAULT NULL COMMENT '本地订单ID',
-  `orderId` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '本地订单长ID',
+  `order_sn` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '本地订单长ID',
   `pay_way` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '1' COMMENT '支付方式：1-微信、2-支付宝',
   `amount` int(11) NOT NULL DEFAULT '0' COMMENT '金额，单位分',
   `qr_id` int(11) NOT NULL DEFAULT '0' COMMENT '有赞生成的支付单ID',
@@ -864,18 +881,6 @@ CREATE TABLE `payment_callback` (
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='有赞云回调日志';
-
-CREATE TABLE `paypal` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `oid` int(11) NOT NULL DEFAULT '0' COMMENT '订单ID',
-  `invoice_number` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '账单号',
-  `items` text COLLATE utf8mb4_unicode_ci COMMENT '商品信息，json格式',
-  `response_data` text COLLATE utf8mb4_unicode_ci COMMENT '收货地址，json格式',
-  `error` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '错误信息',
-  `created_at` datetime DEFAULT NULL COMMENT '创建时间',
-  `updated_at` datetime DEFAULT NULL COMMENT '最后更新时间',
-  PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 

@@ -45,6 +45,22 @@
             </a>
         </div>
         <!-- END LOGO -->
+        <!-- BEGIN PAGE TOP -->
+        <div class="page-top">
+            <div class="top-menu">
+                <ul class="nav navbar-nav pull-right"></ul>
+            </div>
+
+            <!-- BEGIN LANGUAGE -->
+            <div style="display:inline-table;height:100%;float:left;">
+                @if(app()->getLocale() == 'zh-CN')
+                    <a style="display:table-cell;vertical-align:middle;color:red;font-weight:600;" href="{{url('lang', ['locale' => 'en'])}}">English</a>
+                @else
+                    <a style="display:table-cell;vertical-align:middle;color:red;font-weight:600;" href="{{url('lang', ['locale' => 'zh-CN'])}}">中文</a>
+                @endif
+            </div>
+            <!-- END LANGUAGE -->
+        </div>
     </div>
     <!-- END HEADER INNER -->
 </div>
@@ -134,22 +150,18 @@
 <script src="/assets/global/plugins/excanvas.min.js"></script>
 <script src="/assets/global/plugins/ie8.fix.min.js"></script>
 <![endif]-->
-<!-- BEGIN CORE PLUGINS -->
 <script src="/assets/global/plugins/jquery.min.js" type="text/javascript"></script>
 <script src="/assets/global/plugins/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
 <script src="/assets/global/plugins/js.cookie.min.js" type="text/javascript"></script>
 <script src="/assets/global/plugins/jquery-slimscroll/jquery.slimscroll.min.js" type="text/javascript"></script>
 <script src="/assets/global/plugins/jquery.blockui.min.js" type="text/javascript"></script>
 <script src="/assets/global/plugins/bootstrap-switch/js/bootstrap-switch.min.js" type="text/javascript"></script>
-<!-- END CORE PLUGINS -->
-<!-- BEGIN PAGE LEVEL PLUGINS -->
-<!-- END PAGE LEVEL PLUGINS -->
-<!-- BEGIN THEME GLOBAL SCRIPTS -->
 <script src="/assets/global/scripts/app.min.js" type="text/javascript"></script>
-<!-- END THEME GLOBAL SCRIPTS -->
-<!-- BEGIN THEME LAYOUT SCRIPTS -->
 <script src="/assets/layouts/layout4/scripts/layout.min.js" type="text/javascript"></script>
-<!-- END THEME LAYOUT SCRIPTS -->
+<!-- 统计 -->
+{!! $website_analytics !!}
+<!-- 客服 -->
+{!! $website_customer_service !!}
 </body>
 
 </html>

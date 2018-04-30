@@ -37,6 +37,13 @@
 <!-- END LOGO -->
 <!-- BEGIN LOGIN -->
 <div class="content">
+    <nav style="padding-bottom: 20px;text-align: center;">
+        @if(app()->getLocale() == 'zh-CN')
+            <a href="{{url('lang', ['locale' => 'en'])}}">English</a>
+        @else
+            <a href="{{url('lang', ['locale' => 'zh-CN'])}}">中文</a>
+        @endif
+    </nav>
     @if (Session::get('errorMsg'))
         <div class="alert alert-danger">
             <button class="close" data-close="alert"></button>
@@ -53,21 +60,21 @@
     <form class="forget-form" action="{{url('resetPassword')}}" method="post" style="display: block;">
         @if($is_reset_password)
             <div class="form-title">
-                <span class="form-title">重置密码</span>
+                <span class="form-title">{{trans('home.reset_password_title')}}</span>
             </div>
             <div class="form-group">
-                <input class="form-control placeholder-no-fix" type="text" autocomplete="off" placeholder="请输入用户名" name="username" value="{{Request::old('username')}}" required />
+                <input class="form-control placeholder-no-fix" type="text" autocomplete="off" placeholder="" name="username" value="{{Request::old('username')}}" required autofocus />
                 <input type="hidden" name="_token" value="{{csrf_token()}}" />
             </div>
         @else
             <div class="alert alert-danger">
-                <span> 系统维护中，如需重置密码请联系管理员 </span>
+                <span> {{trans('home.system_down')}} </span>
             </div>
         @endif
         <div class="form-actions">
-            <button type="button" class="btn btn-default" onclick="login()">返 回</button>
+            <button type="button" class="btn btn-default" onclick="login()">{{trans('register.back')}}</button>
             @if($is_reset_password)
-                <button type="submit" class="btn red uppercase pull-right">提 交</button>
+                <button type="submit" class="btn red uppercase pull-right">{{trans('register.submit')}}</button>
             @endif
         </div>
     </form>
@@ -80,19 +87,19 @@
 <script src="/assets/global/plugins/excanvas.min.js"></script>
 <script src="/assets/global/plugins/ie8.fix.min.js"></script>
 <![endif]-->
-<!-- BEGIN CORE PLUGINS -->
 <script src="/assets/global/plugins/jquery.min.js" type="text/javascript"></script>
 <script src="/assets/global/plugins/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
-<!-- END CORE PLUGINS -->
+<script src="/assets/global/scripts/app.min.js" type="text/javascript"></script>
 <script type="text/javascript">
     // 登录
     function login() {
         window.location.href = '{{url('login')}}';
     }
 </script>
-<!-- BEGIN THEME GLOBAL SCRIPTS -->
-<script src="/assets/global/scripts/app.min.js" type="text/javascript"></script>
-<!-- END THEME GLOBAL SCRIPTS -->
+<!-- 统计 -->
+{!! $website_analytics !!}
+<!-- 客服 -->
+{!! $website_customer_service !!}
 </body>
 
 </html>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Components\Yzy;
 use App\Http\Controllers\Controller;
 use App\Http\Models\Coupon;
 use App\Http\Models\CouponLog;
@@ -12,11 +13,8 @@ use App\Http\Models\PaymentCallback;
 use App\Http\Models\ReferralLog;
 use App\Http\Models\User;
 use Illuminate\Http\Request;
-use Response;
-use Redirect;
-use Cache;
-use DB;
 use Log;
+use DB;
 
 /**
  * 有赞云支付
@@ -27,32 +25,10 @@ use Log;
 class YzyController extends Controller
 {
     protected static $config;
-    private $accessToken;
 
     function __construct()
     {
         self::$config = $this->systemConfig();
-        $this->accessToken = $this->getAccessToken();
-    }
-
-    // 获取accessToken
-    private function getAccessToken()
-    {
-        if (Cache::has('YZY_TOKEN')) {
-            return Cache::get('YZY_TOKEN')['access_token'];
-        }
-
-        $clientId = self::$config['youzan_client_id']; // f531e5282e4689712a
-        $clientSecret = self::$config['youzan_client_secret']; // 4020b1743633ef334fd06a32190ee677
-
-        $type = 'self';
-        $keys['kdt_id'] = self::$config['kdt_id']; // 40503761
-
-        $token = (new \Youzan\Open\Token($clientId, $clientSecret))->getToken($type, $keys);
-
-        Cache::put('YZY_TOKEN', $token, 10000);
-
-        return $token['access_token'];
     }
 
     // 接收GET请求
@@ -93,8 +69,8 @@ class YzyController extends Controller
 
         if ($data['type'] == 'TRADE_ORDER_STATE') {
             // 读取订单信息
-            $client = new \Youzan\Open\Client($this->accessToken);
-            $result = $client->post('youzan.trade.get', '3.0.0', ['tid' => $msg['tid']]);
+            $yzy = new Yzy();
+            $result = $yzy->getTradeByTid($msg['tid']);
             if (isset($result['error_response'])) {
                 Log::info('【有赞云】回调订单信息错误：' . $result['error_response']['msg']);
                 exit();
@@ -170,7 +146,7 @@ class YzyController extends Controller
                     // 把商品的流量加到账号上
                     User::query()->where('id', $order->user_id)->increment('transfer_enable', $goods->traffic * 1048576);
 
-                    // 套餐就改流量重置日，加油包不改
+                    // 套餐就改流量重置日，流量包不改
                     if ($goods->type == 2) {
                         // 将商品的有效期和流量自动重置日期加到账号上
                         $traffic_reset_day = in_array(date('d'), [29, 30, 31]) ? 28 : abs(date('d'));
@@ -186,8 +162,8 @@ class YzyController extends Controller
                         $referralLog->user_id = $order->user_id;
                         $referralLog->ref_user_id = $order->user->referral_uid;
                         $referralLog->order_id = $order->oid;
-                        $referralLog->amount = $order->totalPrice;
-                        $referralLog->ref_amount = $order->totalPrice * self::$config['referral_percent'];
+                        $referralLog->amount = $order->amount;
+                        $referralLog->ref_amount = $order->amount * self::$config['referral_percent'];
                         $referralLog->status = 0;
                         $referralLog->save();
                     }
@@ -196,7 +172,7 @@ class YzyController extends Controller
                 } catch (\Exception $e) {
                     DB::rollBack();
 
-                    Log::info('【有赞云】更新支付单和订单异常');
+                    Log::info('【有赞云】更新支付单和订单异常：' . $e->getMessage());
                 }
 
                 exit();
@@ -243,6 +219,12 @@ class YzyController extends Controller
 
             if ($data['status'] == 'TRADE_SUCCESS') {
                 Log::info('【有赞云】支付成功' . urldecode($data['msg']));
+                exit();
+            }
+
+            // 用户已签收
+            if ($data['status'] == 'TRADE_BUYER_SIGNED') {
+                Log::info('【有赞云】用户已签收' . urldecode($data['msg']));
                 exit();
             }
 

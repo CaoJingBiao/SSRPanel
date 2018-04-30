@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Components\Yzy;
 use App\Http\Models\Coupon;
 use App\Http\Models\Goods;
 use App\Http\Models\Order;
@@ -9,49 +10,16 @@ use App\Http\Models\PaymentCallback;
 use Illuminate\Http\Request;
 use Response;
 use Redirect;
-use Cache;
 use Log;
 use DB;
 
 class PaymentController extends Controller
 {
     protected static $config;
-    private $accessToken;
 
     function __construct()
     {
         self::$config = $this->systemConfig();
-        $this->accessToken = $this->getAccessToken();
-    }
-
-    // 获取accessToken
-    private function getAccessToken()
-    {
-        if (Cache::has('YZY_TOKEN')) {
-            $yzyToken = Cache::get('YZY_TOKEN');
-            if (isset($yzyToken['error'])) { // 错误兼容
-                Cache::forget('YZY_TOKEN');
-            } else {
-                return Cache::get('YZY_TOKEN')['access_token'];
-            }
-        }
-
-        $clientId = self::$config['youzan_client_id'];
-        $clientSecret = self::$config['youzan_client_secret'];
-        $type = 'self';
-        $keys['kdt_id'] = self::$config['kdt_id'];
-
-        $token = (new \Youzan\Open\Token($clientId, $clientSecret))->getToken($type, $keys);
-
-        if (isset($token['error'])) {
-            Log::info('获取有赞云支付access_token失败：' . $token['error_description']);
-
-            return '';
-        } else {
-            Cache::put('YZY_TOKEN', $token, 10000);
-
-            return $token['access_token'];
-        }
     }
 
     // 创建支付单
@@ -59,6 +27,7 @@ class PaymentController extends Controller
     {
         $goods_id = intval($request->get('goods_id'));
         $coupon_sn = $request->get('coupon_sn');
+        $user = $request->session()->get('user');
 
         $goods = Goods::query()->where('id', $goods_id)->where('status', 1)->first();
         if (!$goods) {
@@ -71,39 +40,44 @@ class PaymentController extends Controller
         }
 
         // 判断是否存在同个商品的未支付订单
-        $existsOrder = Order::query()->where('goods_id', $goods_id)->where('status', 0)->first();
+        $existsOrder = Order::query()->where('goods_id', $goods_id)->where('status', 0)->where('user_id', $user['id'])->first();
         if ($existsOrder) {
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '创建支付单失败：尚有未支付的订单，请先去支付']);
         }
 
         // 使用优惠券
         if ($coupon_sn) {
-            $coupon = Coupon::query()->where('sn', $coupon_sn)->where('is_del', 0)->where('status', 0)->first();
+            $coupon = Coupon::query()->where('sn', $coupon_sn)->whereIn('type', [1, 2])->where('is_del', 0)->where('status', 0)->first();
             if (!$coupon) {
                 return Response::json(['status' => 'fail', 'data' => '', 'message' => '创建支付单失败：优惠券不存在']);
             }
 
             // 计算实际应支付总价
-            $totalPrice = $coupon->type == 2 ? $goods->price * $coupon->discount : $goods->price - $coupon->amount;
-            $totalPrice = $totalPrice > 0 ? $totalPrice : 0;
+            $amount = $coupon->type == 2 ? $goods->price * $coupon->discount : $goods->price - $coupon->amount;
+            $amount = $amount > 0 ? $amount : 0;
         } else {
-            $totalPrice = $goods->price;
+            $amount = $goods->price;
+        }
+
+        // 如果最后总价格为0，则不允许创建支付单
+        if ($amount <= 0) {
+            return Response::json(['status' => 'fail', 'data' => '', 'message' => '创建支付单失败：合计价格为0，无需使用在线支付']);
         }
 
         DB::beginTransaction();
         try {
             $user = $request->session()->get('user');
-            $orderId = date('ymdHis') . mt_rand(100000, 999999);
+            $orderSn = date('ymdHis') . mt_rand(100000, 999999);
             $sn = makeRandStr(12);
 
             // 生成订单
             $order = new Order();
-            $order->orderId = $orderId;
+            $order->order_sn = $orderSn;
             $order->user_id = $user['id'];
             $order->goods_id = $goods_id;
             $order->coupon_id = !empty($coupon) ? $coupon->id : 0;
-            $order->totalOriginalPrice = $goods->price;
-            $order->totalPrice = $totalPrice;
+            $order->origin_amount = $goods->price;
+            $order->amount = $amount;
             $order->expire_at = date("Y-m-d H:i:s", strtotime("+" . $goods->days . " days"));
             $order->is_expire = 0;
             $order->pay_way = 2;
@@ -111,19 +85,8 @@ class PaymentController extends Controller
             $order->save();
 
             // 生成支付单
-            $client = new \Youzan\Open\Client($this->accessToken);
-
-            $method = 'youzan.pay.qrcode.create';
-            $apiVersion = '3.0.0';
-
-            $params = [
-                'qr_name'   => $goods->name, // 商品名
-                'qr_price'  => $totalPrice, // 单位分
-                'qr_source' => $orderId, // 本地订单号
-                'qr_type'   => 'QR_TYPE_DYNAMIC'
-            ];
-
-            $result = $client->get($method, $apiVersion, $params);
+            $yzy = new Yzy();
+            $result = $yzy->createQrCode($goods->name, $amount * 100, $orderSn);
             if (isset($result['error_response'])) {
                 Log::error('【有赞云】创建二维码失败：' . $result['error_response']['msg']);
 
@@ -134,9 +97,9 @@ class PaymentController extends Controller
             $payment->sn = $sn;
             $payment->user_id = $user['id'];
             $payment->oid = $order->oid;
-            $payment->orderId = $orderId;
+            $payment->order_sn = $orderSn;
             $payment->pay_way = 1;
-            $payment->amount = $order->totalPrice;
+            $payment->amount = $amount;
             $payment->qr_id = $result['response']['qr_id'];
             $payment->qr_url = $result['response']['qr_url'];
             $payment->qr_code = $result['response']['qr_code'];
@@ -177,6 +140,8 @@ class PaymentController extends Controller
         }
 
         $view['payment'] = $payment;
+        $view['website_analytics'] = self::$config['website_analytics'];
+        $view['website_customer_service'] = self::$config['website_customer_service'];
 
         return Response::view('payment/detail', $view);
     }
