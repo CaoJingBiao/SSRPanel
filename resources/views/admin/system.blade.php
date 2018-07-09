@@ -292,6 +292,34 @@
                                                             </div>
                                                         </div>
                                                     </div>
+                                                    <div class="form-group">
+                                                        <div class="col-md-6">
+                                                            <label for="goods_purchase_limit_strategy" class="col-md-3 control-label">商品限购</label>
+                                                            <div class="col-md-9">
+                                                                <select id="goods_purchase_limit_strategy" class="form-control select2" name="goods_purchase_limit_strategy">
+                                                                    <option value="none"
+                                                                        @if ($goods_purchase_limit_strategy == 'none')
+                                                                        selected
+                                                                        @endif
+                                                                    >不限制</option>
+                                                                    <option value="free"
+                                                                        @if ($goods_purchase_limit_strategy == 'free')
+                                                                        selected
+                                                                        @endif
+                                                                    >仅限免费商品</option>
+                                                                    <option value="all"
+                                                                        @if ($goods_purchase_limit_strategy == 'all')
+                                                                        selected
+                                                                        @endif
+                                                                    >限全部商品</option>
+                                                                </select>
+                                                                <span class="help-block"> 是否限制用户重复购买商品，限制后用户不可重复购买已购买的、尚在有效期的商品 </span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            &nbsp;
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </form>
                                         </div>
@@ -303,7 +331,7 @@
                                                             <label for="login_add_score" class="col-md-3 control-label">登录加积分</label>
                                                             <div class="col-md-9">
                                                                 <input type="checkbox" class="make-switch" @if($login_add_score) checked @endif id="login_add_score" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
-                                                                <span class="help-block"> 登录时将根据积分范围得到积分 </span>
+                                                                <span class="help-block"> 登录时将根据积分范围随机得到积分 </span>
                                                             </div>
                                                         </div>
                                                         <div class="col-md-6">
@@ -311,11 +339,12 @@
                                                             <div class="col-md-9">
                                                                 <div class="input-group">
                                                                     <input class="form-control" type="text" name="login_add_score_range" value="{{$login_add_score_range}}" id="login_add_score_range" />
+                                                                    <span class="input-group-addon">分钟</span>
                                                                     <span class="input-group-btn">
-                                                                    <button class="btn btn-success" type="button" onclick="setLoginAddScoreRange()">修改</button>
-                                                                </span>
+                                                                        <button class="btn btn-success" type="button" onclick="setLoginAddScoreRange()">修改</button>
+                                                                    </span>
                                                                 </div>
-                                                                <span class="help-block"> 每隔多久登录才会加积分(单位分钟) </span>
+                                                                <span class="help-block"> 间隔多久登录才会加积分 </span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -357,7 +386,7 @@
                                                                     <button class="btn btn-success" type="button" onclick="setReferralTraffic()">修改</button>
                                                                 </span>
                                                                 </div>
-                                                                <span class="help-block"> 根据推广链接注册则送多少流量（叠加在默认流量上） </span>
+                                                                <span class="help-block"> 根据推广链接、邀请码注册则赠送相应的流量 </span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -465,7 +494,7 @@
                                                             <label for="is_server_chan" class="col-md-3 control-label">ServerChan</label>
                                                             <div class="col-md-9">
                                                                 <input type="checkbox" class="make-switch" @if($is_server_chan) checked @endif id="is_server_chan" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
-                                                                <span class="help-block"> 使用ServerChan推送节点宕机提醒（<a href="http://sc.ftqq.com" target="_blank">绑定微信</a>），须先启用节点宕机警告 </span>
+                                                                <span class="help-block"> 使用ServerChan推送节点宕机提醒、流量异常警告（<a href="http://sc.ftqq.com" target="_blank">绑定微信</a>），须先启用节点宕机警告 </span>
                                                             </div>
                                                         </div>
                                                         <div class="col-md-6">
@@ -478,6 +507,41 @@
                                                                     </span>
                                                                 </div>
                                                                 <span class="help-block"> 启用ServerChan，请务必填入本值（<a href="http://sc.ftqq.com" target="_blank">申请SCKEY</a>） </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <div class="col-md-6">
+                                                            <label for="is_push_bear" class="col-md-3 control-label">PushBear</label>
+                                                            <div class="col-md-9">
+                                                                <input type="checkbox" class="make-switch" @if($is_push_bear) checked @endif id="is_push_bear" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
+                                                                <span class="help-block"> 使用PushBear批量推送微信消息给用户（<a href="https://pushbear.ftqq.com/admin/#/signin" target="_blank">创建消息通道</a>） </span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label for="push_bear_send_key" class="col-md-3 control-label">SendKey</label>
+                                                            <div class="col-md-9">
+                                                                <div class="input-group">
+                                                                    <input class="form-control" type="text" name="push_bear_send_key" value="{{$push_bear_send_key}}" id="push_bear_send_key" placeholder="创建消息通道后即可获取" />
+                                                                    <span class="input-group-btn">
+                                                                        <button class="btn btn-success" type="button" onclick="setPushBearSendKey()">修改</button>
+                                                                    </span>
+                                                                </div>
+                                                                <span class="help-block"> 启用PushBear，请务必填入本值 </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <div class="col-md-6">
+                                                            <label for="push_bear_qrcode" class="col-md-3 control-label">订阅二维码</label>
+                                                            <div class="col-md-9">
+                                                                <div class="input-group">
+                                                                    <input class="form-control" type="text" name="push_bear_qrcode" value="{{$push_bear_qrcode}}" id="push_bear_qrcode" placeholder="填入创建好的消息通道的二维码URL" />
+                                                                    <span class="input-group-btn">
+                                                                        <button class="btn btn-success" type="button" onclick="setPushBearQrCode()">修改</button>
+                                                                    </span>
+                                                                </div>
+                                                                <span class="help-block"> 创建消息通道后，在二维码上点击右键“复制图片地址”，展示于个人中心 </span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -565,6 +629,13 @@
                                                             <div class="col-md-9">
                                                                 <input type="checkbox" class="make-switch" @if($auto_release_port) checked @endif id="auto_release_port" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
                                                                 <span class="help-block"> 被禁用的用户端口自动释放，重新启用用户则需要手动分配端口并手动重启一次SSR(R) </span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label for="is_ban_status" class="col-md-3 control-label">过期封禁是否禁止账号</label>
+                                                            <div class="col-md-9">
+                                                                <input type="checkbox" class="make-switch" @if($is_ban_status) checked @endif id="is_ban_status" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
+                                                                <span class="help-block"> 被禁用的用户在禁止过期用户时不仅禁止SSR，而且同时禁止账号</span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -902,6 +973,21 @@
             }
         });
 
+        // 启用、禁用PushBear
+        $('#is_push_bear').on({
+            'switchChange.bootstrapSwitch': function(event, state) {
+                var is_push_bear = state ? 1 : 0;
+
+                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_push_bear', value:is_push_bear}, function (ret) {
+                    layer.msg(ret.message, {time:1000}, function() {
+                        if (ret.status == 'fail') {
+                            window.location.reload();
+                        }
+                    });
+                });
+            }
+        });
+
         // 启用、禁用订阅异常自动封禁
         $('#is_subscribe_ban').on({
             'switchChange.bootstrapSwitch': function(event, state) {
@@ -1006,6 +1092,21 @@
                 });
             }
         });
+	
+        // 过期封禁是否禁止账号
+        $('#is_ban_status').on({
+            'switchChange.bootstrapSwitch': function(event, state) {
+                var is_ban_status = state ? 1 : 0;
+
+                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_ban_status', value:is_ban_status}, function (ret) {
+                    layer.msg(ret.message, {time:1000}, function() {
+                        if (ret.status == 'fail') {
+                            window.location.reload();
+                        }
+                    });
+                });
+            }
+        });
 
         // 启用、禁用有赞云
         $('#is_youzan').on({
@@ -1076,6 +1177,32 @@
             var server_chan_key = $("#server_chan_key").val();
 
             $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'server_chan_key', value:server_chan_key}, function (ret) {
+                layer.msg(ret.message, {time:1000}, function() {
+                    if (ret.status == 'fail') {
+                        window.location.reload();
+                    }
+                });
+            });
+        }
+
+        // 设置PushBear的SendKey
+        function setPushBearSendKey() {
+            var push_bear_send_key = $("#push_bear_send_key").val();
+
+            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'push_bear_send_key', value:push_bear_send_key}, function (ret) {
+                layer.msg(ret.message, {time:1000}, function() {
+                    if (ret.status == 'fail') {
+                        window.location.reload();
+                    }
+                });
+            });
+        }
+
+        // 设置PushBear的消息通道二维码URL
+        function setPushBearQrCode() {
+            var push_bear_qrcode = $("#push_bear_qrcode").val();
+
+            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'push_bear_qrcode', value:push_bear_qrcode}, function (ret) {
                 layer.msg(ret.message, {time:1000}, function() {
                     if (ret.status == 'fail') {
                         window.location.reload();
@@ -1230,6 +1357,17 @@
                     }
                 });
             });
+        });
+
+        $("#goods_purchase_limit_strategy").change(function() {
+            var strategy = $(this).val();
+            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'goods_purchase_limit_strategy', value: strategy}, function (ret) {
+                layer.msg(ret.message, {time:1000}, function() {
+                    if (ret.status == 'fail') {
+                        window.location.reload();
+                    }
+                });
+            }); 
         });
 
         // 设置注册时默认有效期

@@ -45,6 +45,16 @@ class PaymentController extends Controller
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '创建支付单失败：尚有未支付的订单，请先去支付']);
         }
 
+        // 限购控制
+        $strategy = self::$config['goods_purchase_limit_strategy'];
+        if ($strategy == 'all' || ($strategy == 'free' && $goods->price == 0)) {
+            // 判断是否已经购买过该商品
+            $none_expire_good_exist = Order::query()->where('user_id', $user['id'])->where('goods_id', $goods_id)->where('is_expire', 0)->exists();
+            if ($none_expire_good_exist) {
+                return Response::json(['status' => 'fail', 'data' => '', 'message' => '创建支付单失败：商品不可重复购买']);
+            }
+        }
+
         // 使用优惠券
         if ($coupon_sn) {
             $coupon = Coupon::query()->where('sn', $coupon_sn)->whereIn('type', [1, 2])->where('is_del', 0)->where('status', 0)->first();
@@ -53,7 +63,7 @@ class PaymentController extends Controller
             }
 
             // 计算实际应支付总价
-            $amount = $coupon->type == 2 ? $goods->price * $coupon->discount : $goods->price - $coupon->amount;
+            $amount = $coupon->type == 2 ? $goods->price * $coupon->discount / 10 : $goods->price - $coupon->amount;
             $amount = $amount > 0 ? $amount : 0;
         } else {
             $amount = $goods->price;
@@ -106,6 +116,11 @@ class PaymentController extends Controller
             $payment->qr_local_url = $this->base64ImageSaver($result['response']['qr_code']);
             $payment->status = 0;
             $payment->save();
+
+            // 优惠券置为已使用
+            if (!empty($coupon)) {
+                Coupon::query()->where('id', $coupon->id)->update(['status' => 1]);
+            }
 
             DB::commit();
 

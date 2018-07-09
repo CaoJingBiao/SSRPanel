@@ -2,10 +2,10 @@
 
 return [
     'panel'                           => '제어판',
-    'subscribe_address'               => 'Rss구독주소',
+    'subscribe_address'               => 'RSS구독주소',
     'copy_subscribe_address'          => '주소복사',
     'exchange_subscribe'              => '주소변경',
-    'subscribe_warning'               => 'Tips:이 주소는 개인VPN정보가 담긴RSS주소이므로 타인에거 알려수시면 안됩니다',
+    'subscribe_warning'               => '경고: 구독 주소 는 개인적 으로 사용 되 지 말고 이 주소 를 전파 하지 마시오',
     'reset_password_title'            => '비번리셋',
     'system_down'                     => '서비스 점금중',
     'subscribe_baned'                 => '구독주소가 금지되였습니다,관리자에게 문의해주세요',
@@ -22,7 +22,7 @@ return [
     'no_need_invite_codes'            => '초청코드 없이 가입가능합니다',
 
     // 首页
-    'ratio_tips'                      => '서버RSS：서버가 변경될경유 클라이언트 에서 자동으로 갱신 ',
+    'ratio_tips'                      => '지원 기능의 구독 기능을 사용하는 클라이언트 사용, 구독 기능으로 클라이언트 동기화 정보를 입력할 수 있습니다.',
     'subscribe_button'                => 'RSS구도주소 보기',
     'account_info'                    => '유저정보',
     'account_level'                   => '레벨',
@@ -53,7 +53,7 @@ return [
     'coupon_code'                     => '충전카드',
     'please_input_coupon'             => '충전 카드 번호를 입력하세요',
     'scan_qrcode'                     => '앱 으로 QR코드를 스켄해주시면 서버가 추가 됩니다',
-    'setting_info'                    => 'SS(R)서버 스팩',
+    'setting_info'                    => '설정 정보',
     'ratio'                           => '정산비율',
     'coupon_not_empty'                => '카드번호가 비였습니다',
     'recharging'                      => '충전중...',
@@ -63,7 +63,7 @@ return [
     // 用户资料
     'submit'                          => '확인',
     'contact'                         => '연락방식',
-    'ssr_setting'                     => 'SSR(R)설정',
+    'ssr_setting'                     => '에이전트 설정',
     'password'                        => '비밀번호',
     'new_password'                    => '새로운 비밀번호',
     'current_password'                => '현재 비밀번호',
@@ -71,7 +71,7 @@ return [
     'connection_password'             => '연결암호',
     'encrpytion'                      => '암호화 방식',
     'protocal'                        => '프로토콜',
-    'obfs'                            => '뒤섞다.',
+    'obfs'                            => '혼동',
 
     // 购买服务
     'service_title'                   => '서버구축',
@@ -90,11 +90,13 @@ return [
     'day'                             => '일',
     'coupon'                          => '할인권',
     'redeem_coupon'                   => '사용',
+    'service_type_1'                  => '유량용 가방',
+    'service_type_2'                  => '세트',
 
     // 流量日志
-    'traffic_log_tips'                => '주의하다：30일내의트래픽은당일을 통계안하면，24간내의트래픅은현재시간은 통계안합니다。',
-    'traffic_log_30days'              => '30일트래픽 사용현황',
-    'traffic_log_24hours'             => '24간트패픽 사용현환',
+    'traffic_log_tips'                => '주의하다：유량 통계도 갱신 지연.천인 통계도로는 이튿날 갱신하며 시간별로 통계도가 1 시간에 갱신한다.',
+    'traffic_log_30days'              => '30 일트래픽 사용현황',
+    'traffic_log_24hours'             => '24 간트패픽 사용현환',
     'traffic_log_keywords'            => '사용된트래픽',
     'traffic_log_unit'                => '단위M',
     'traffic_log_max'                 => '최대치',
@@ -121,6 +123,7 @@ return [
     'invoice_table_name'              => '서버스',
     'invoice_table_price'             => '금액',
     'invoice_table_create_date'       => '구입일자',
+    'invoice_table_expire_at'         => '만료 시간',
     'invoice_table_status'            => '상태',
     'invoice_table_none'              => '데이터 없음',
     'invoice_table_closed'            => '닫혔어',
@@ -160,5 +163,6 @@ return [
     'console'                         => '관리센트',
     'profile'                         => '개인정보',
     'logout'                          => '로그아웃',
-    'promote'                         => '당신의 홍보주소로 회원가입하실경우 :traffic 트래픽증정，본인도 :traffic 트래픽증정；홍보링크로 가입한횐들이 소비할경우，소비금액의; :referral_percent% 리턴합니다',
+    'promote_link'                    => '보급 링크 등록을 통해 활성화, 양측 모두 :traffic 유량에 장려합니다; 그들이 소비할 때, 그들의 소비 금액을 얻을 수 있는 :referral_percent% 를 장려합니다.',
+    'promote_invite_code'             => '요청을 통해 등록 및 활성화, 양측 모두 :traffic 유량에 장려합니다, 그들이 소비할 때, 그들의 소비 금액을 얻을 수 있습니다 :referral_percent% 를 장려합니다',
 ];

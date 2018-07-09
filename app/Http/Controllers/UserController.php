@@ -66,6 +66,8 @@ class UserController extends Controller
         $view['login_add_score'] = self::$config['login_add_score'];
         $view['website_analytics'] = self::$config['website_analytics'];
         $view['website_customer_service'] = self::$config['website_customer_service'];
+        $view['is_push_bear'] = self::$config['is_push_bear'];
+        $view['push_bear_qrcode'] = self::$config['push_bear_qrcode'];
 
         // 推广返利是否可见
         if (!$request->session()->has('referral_status')) {
@@ -281,20 +283,30 @@ class UserController extends Controller
     {
         $user = $request->session()->get('user');
 
-        // 30天内的流量
-        $userTrafficDaily = UserTrafficDaily::query()->where('user_id', $user['id'])->where('node_id', 0)->orderBy('id', 'desc')->limit(30)->get();
-
         $dailyData = [];
-        foreach ($userTrafficDaily as $daily) {
-            $dailyData[] = round($daily->total / (1024 * 1024), 2); // 以M为单位
+        $hourlyData = [];
+
+        // 节点一个月内的流量
+        $userTrafficDaily = UserTrafficDaily::query()->where('user_id', $user['id'])->where('node_id', 0)->where('created_at', '>=', date('Y-m', time()))->orderBy('created_at', 'asc')->pluck('total')->toArray();
+
+        $dailyTotal = date('d', time()) - 1; // 今天不算，减一
+        $dailyCount = count($userTrafficDaily);
+        for ($x = 0; $x < ($dailyTotal - $dailyCount); $x++) {
+            $dailyData[$x] = 0;
+        }
+        for ($x = ($dailyTotal - $dailyCount); $x < $dailyTotal; $x++) {
+            $dailyData[$x] = round($userTrafficDaily[$x - ($dailyTotal - $dailyCount)] / (1024 * 1024 * 1024), 3);
         }
 
-        // 24小时内的流量
-        $userTrafficHourly = UserTrafficHourly::query()->where('user_id', $user['id'])->where('node_id', 0)->orderBy('id', 'desc')->limit(24)->get();
-
-        $hourlyData = [];
-        foreach ($userTrafficHourly as $hourly) {
-            $hourlyData[] = round($hourly->total / (1024 * 1024), 2); // 以M为单位
+        // 节点一天内的流量
+        $userTrafficHourly = UserTrafficHourly::query()->where('user_id', $user['id'])->where('node_id', 0)->where('created_at', '>=', date('Y-m-d', time()))->orderBy('created_at', 'asc')->pluck('total')->toArray();
+        $hourlyTotal = date('H', time());
+        $hourlyCount = count($userTrafficHourly);
+        for ($x = 0; $x < ($hourlyTotal - $hourlyCount); $x++) {
+            $hourlyData[$x] = 0;
+        }
+        for ($x = ($hourlyTotal - $hourlyCount); $x < $hourlyTotal; $x++) {
+            $hourlyData[$x] = round($userTrafficHourly[$x - ($hourlyTotal - $hourlyCount)] / (1024 * 1024 * 1024), 3);
         }
 
         $view['trafficDaily'] = "'" . implode("','", $dailyData) . "'";
@@ -475,6 +487,8 @@ class UserController extends Controller
         $view['website_customer_service'] = self::$config['website_customer_service'];
         $view['num'] = self::$config['invite_num'] - $num <= 0 ? 0 : self::$config['invite_num'] - $num; // 还可以生成的邀请码数量
         $view['inviteList'] = Invite::query()->where('uid', $user['id'])->with(['generator', 'user'])->paginate(10); // 邀请码列表
+        $view['referral_traffic'] = flowAutoShow(self::$config['referral_traffic'] * 1048576);
+        $view['referral_percent'] = self::$config['referral_percent'];
 
         return Response::view('user/invite', $view);
     }
@@ -828,9 +842,23 @@ class UserController extends Controller
         $user = $request->session()->get('user');
 
         if ($request->method() == 'POST') {
-            $goods = Goods::query()->with(['label'])->where('id', $goods_id)->where('status', 1)->first();
+            $goods = Goods::query()->with(['label'])->where('id', $goods_id)->where('is_del', 0)->where('status', 1)->first();
             if (empty($goods)) {
                 return Response::json(['status' => 'fail', 'data' => '', 'message' => '支付失败：商品或服务已下架']);
+            }
+
+            // 检查配置是否启用了限购：all-所有商品限购, free-价格为0的商品限购, none-不限购（默认）
+            if (!isset(self::$config['goods_purchase_limit_strategy'])) {
+                self::$config['goods_purchase_limit_strategy'] = 'none';
+            }
+
+            $strategy = self::$config['goods_purchase_limit_strategy'];
+            if ($strategy == 'all' || ($strategy == 'free' && $goods->price == 0)) {
+                // 判断是否已经购买过该商品
+                $none_expire_good_exist = Order::query()->where('user_id', $user['id'])->where('goods_id', $goods_id)->where('is_expire', 0)->where('status', '>=', 0)->exists();
+                if ($none_expire_good_exist) {
+                    return Response::json(['status' => 'fail', 'data' => '', 'message' => '支付失败：商品不可重复购买']);
+                }
             }
 
             // 使用优惠券
@@ -841,7 +869,7 @@ class UserController extends Controller
                 }
 
                 // 计算实际应支付总价
-                $amount = $coupon->type == 2 ? $goods->price * $coupon->discount : $goods->price - $coupon->amount;
+                $amount = $coupon->type == 2 ? $goods->price * $coupon->discount / 10 : $goods->price - $coupon->amount;
                 $amount = $amount > 0 ? $amount : 0;
             } else {
                 $amount = $goods->price;
@@ -898,7 +926,7 @@ class UserController extends Controller
                     $couponLog->save();
                 }
 
-                // 如果买的是套餐，则先将之前购买的所有套餐置都无效，并扣掉之前所有套餐的流量
+                // 如果买的是套餐，则先将之前购买的所有套餐置都无效，并扣掉之前所有套餐的流量，并移除之前所有套餐的标签
                 if ($goods->type == 2) {
                     $existOrderList = Order::query()->with('goods')->whereHas('goods', function ($q) {
                         $q->where('type', 2);
@@ -906,6 +934,8 @@ class UserController extends Controller
                     foreach ($existOrderList as $vo) {
                         Order::query()->where('oid', $vo->oid)->update(['is_expire' => 1]);
                         User::query()->where('id', $user->id)->decrement('transfer_enable', $vo->goods->traffic * 1048576);
+
+                        //todo：移除之前套餐的标签（需要注意：有些套餐和流量包用同一个标签，所以移除完套餐的标签后需要补齐流量包的标签）
                     }
 
                     // 重置已用流量
@@ -968,7 +998,7 @@ class UserController extends Controller
                 return Response::json(['status' => 'fail', 'data' => '', 'message' => '支付失败：' . $e->getMessage()]);
             }
         } else {
-            $goods = Goods::query()->where('id', $goods_id)->where('status', 1)->first();
+            $goods = Goods::query()->where('id', $goods_id)->where('is_del', 0)->where('status', 1)->first();
             if (empty($goods)) {
                 return Redirect::to('user/goodsList');
             }

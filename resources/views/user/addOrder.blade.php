@@ -101,7 +101,7 @@
                         // 根据类型计算折扣后的总金额
                         var total_price = 0;
                         if (ret.data.type == '2') {
-                            total_price = goods_price * ret.data.discount;
+                            total_price = goods_price * ret.data.discount / 10;
                         } else {
                             total_price = goods_price - ret.data.amount;
                             total_price = total_price > 0 ? total_price : 0;
@@ -109,6 +109,7 @@
 
                         $(".grand-total").text("￥" + total_price);
                     } else {
+                        $(".grand-total").text("￥" + goods_price);
                         $("#coupon_sn").parent().addClass('has-error');
                         $("#coupon_sn").parent().remove('.input-group-addon');
                         $("#coupon_sn").parent().prepend('<span class="input-group-addon"><i class="fa fa-remove fa-fw"></i></span>');

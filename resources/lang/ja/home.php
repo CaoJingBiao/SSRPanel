@@ -22,7 +22,7 @@ return [
     'no_need_invite_codes'            => 'プラットフォームオープン登録、招待コードなし',
 
     // 首页
-    'ratio_tips'                      => 'ノード購読：プロキシノードを取得して自動アップデートを設定するのは簡単です。',
+    'ratio_tips'                      => 'ノードの購読機能をサポートするクライアントを使用することをお勧めします。',
     'subscribe_button'                => '取得する',
     'account_info'                    => 'アカウント情報',
     'account_level'                   => 'レベル',
@@ -92,11 +92,13 @@ return [
     'day'                             => '日',
     'coupon'                          => 'クーポン券',
     'redeem_coupon'                   => '使用する',
+    'service_type_1'                  => '流量包',
+    'service_type_2'                  => 'コース',
 
     // 流量日志
-    'traffic_log_tips'                => 'ヒント：30日のデータ通信量統計は当日、24時間内のデータ通信量統計が現在の時間を統計していない。',
-    'traffic_log_30days'              => '30日内のデータ通信量消耗',
-    'traffic_log_24hours'             => '24時間内のデータ通信量消耗',
+    'traffic_log_tips'                => 'ヒント：流量統計図更新は遅延がある。日の統計図を押すと翌日に更新され、時間統計図で次の時間に更新されます。',
+    'traffic_log_30days'              => '30 日内のデータ通信量消耗',
+    'traffic_log_24hours'             => '24 時間内のデータ通信量消耗',
     'traffic_log_keywords'            => 'データ通信量消耗',
     'traffic_log_unit'                => '単位/M',
     'traffic_log_max'                 => '最大値',
@@ -123,6 +125,7 @@ return [
     'invoice_table_name'              => 'サービス',
     'invoice_table_price'             => '金額',
     'invoice_table_create_date'       => '購入日',
+    'invoice_table_expire_at'         => '有効期限',
     'invoice_table_status'            => '状態',
     'invoice_table_none'              => 'データなし',
     'invoice_table_closed'            => '閉鎖された',
@@ -162,5 +165,6 @@ return [
     'console'                         => '管理センター',
     'profile'                         => '個人設定',
     'logout'                          => 'ログアウト',
-    'promote'                         => 'プロモーションリンクで登録および有効化されたユーザーは :traffic のデータ通信量を受け取ることができます。また、 :traffic のデータ通信量を得ることもできます。消費すると、その支出額の :referral_percent% を報酬として受け取ることができます。',
+    'promote_link'                    => 'あなたの普及のリンクを通じて登録してアクティブにして、あなたたちの双方はすべて :traffic の流量の奨励を獲得します；彼らが消費する時、あなたは彼らの消費金額の :referral_percent% を獲得することを奨励します。',
+    'promote_invite_code'             => 'お客様の招待コードの登録をアクティブにして、あなた達の双方は獲得して :traffic 流量奨励;彼らが消费の時、あなたは獲得して彼らの消費金額の :referral_percent% ご褒美として。',
 ];

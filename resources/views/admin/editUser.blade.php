@@ -46,23 +46,23 @@
                                                 </div>
                                             </div>
                                             <div class="form-group">
-                                                <label for="usage" class="col-md-3 control-label">用途</label>
+                                                <label class="col-md-3 control-label">用途</label>
                                                 <div class="col-md-8">
-                                                    <div class="mt-radio-inline">
-                                                        <label class="mt-radio">
-                                                            <input type="radio" name="usage" value="1" {{$user->usage == 1 ? 'checked' : ''}}> 手机
+                                                    <div class="mt-checkbox-inline">
+                                                        <label class="mt-checkbox">
+                                                            <input type="checkbox" name="usage" value="1" {{in_array(1, $user->usage) ? 'checked' : ''}}> 手机
                                                             <span></span>
                                                         </label>
-                                                        <label class="mt-radio">
-                                                            <input type="radio" name="usage" value="2" {{$user->usage == 2 ? 'checked' : ''}}> 电脑
+                                                        <label class="mt-checkbox">
+                                                            <input type="checkbox" name="usage" value="2" {{in_array(2, $user->usage) ? 'checked' : ''}}> 电脑
                                                             <span></span>
                                                         </label>
-                                                        <label class="mt-radio">
-                                                            <input type="radio" name="usage" value="3" {{$user->usage == 3 ? 'checked' : ''}}> 路由器
+                                                        <label class="mt-checkbox">
+                                                            <input type="checkbox" name="usage" value="3" {{in_array(3, $user->usage) ? 'checked' : ''}}> 路由器
                                                             <span></span>
                                                         </label>
-                                                        <label class="mt-radio">
-                                                            <input type="radio" name="usage" value="4" {{$user->usage == 4 ? 'checked' : ''}}> 其他
+                                                        <label class="mt-checkbox">
+                                                            <input type="checkbox" name="usage" value="4" {{in_array(4, $user->usage) ? 'checked' : ''}}> 平板
                                                             <span></span>
                                                         </label>
                                                     </div>
@@ -77,15 +77,19 @@
                                                             <span></span>
                                                         </label>
                                                         <label class="mt-radio">
-                                                            <input type="radio" name="pay_way" value="1" {{$user->pay_way == 1 ? 'checked' : ''}}> 月付
+                                                            <input type="radio" name="pay_way" value="1" {{$user->pay_way == 1 ? 'checked' : ''}}> 季付
                                                             <span></span>
                                                         </label>
                                                         <label class="mt-radio">
-                                                            <input type="radio" name="pay_way" value="2" {{$user->pay_way == 2 ? 'checked' : ''}}> 半年付
+                                                            <input type="radio" name="pay_way" value="2" {{$user->pay_way == 2 ? 'checked' : ''}}> 月付
                                                             <span></span>
                                                         </label>
                                                         <label class="mt-radio">
-                                                            <input type="radio" name="pay_way" value="3" {{$user->pay_way == 3 ? 'checked' : ''}}> 年付
+                                                            <input type="radio" name="pay_way" value="3" {{$user->pay_way == 3 ? 'checked' : ''}}> 半年付
+                                                            <span></span>
+                                                        </label>
+                                                        <label class="mt-radio">
+                                                            <input type="radio" name="pay_way" value="4" {{$user->pay_way == 4 ? 'checked' : ''}}> 年付
                                                             <span></span>
                                                         </label>
                                                     </div>
@@ -215,7 +219,7 @@
                                                     <div class="input-group">
                                                         <input class="form-control" type="text" name="port" value="{{$user->port}}" id="port" />
                                                         <span class="input-group-btn">
-                                                            <button class="btn btn-success" type="button" onclick="makePort()"> {{$user->port ? '更换' : '生成'}} </button>
+                                                            <button class="btn btn-success" type="button" onclick="makePort()"> <i class="fa fa-refresh"></i> </button>
                                                         </span>
                                                     </div>
                                                 </div>
@@ -226,7 +230,7 @@
                                                     <div class="input-group">
                                                         <input class="form-control" type="text" name="passwd" value="{{$user->passwd}}" id="passwd" />
                                                         <span class="input-group-btn">
-                                                            <button class="btn btn-success" type="button" onclick="makePasswd()"> 生成 </button>
+                                                            <button class="btn btn-success" type="button" onclick="makePasswd()"> <i class="fa fa-refresh"></i> </button>
                                                         </span>
                                                     </div>
                                                 </div>
@@ -373,6 +377,7 @@
     <script type="text/javascript">
         // 用户标签选择器
         $('#labels').select2({
+            theme: 'bootstrap',
             placeholder: '设置后则可见相同标签的节点',
             allowClear: true
         });
@@ -413,7 +418,6 @@
             var id = '{{Request::get('id')}}';
             var username = $('#username').val();
             var password = $('#password').val();
-            var usage = $("input:radio[name='usage']:checked").val();
             var pay_way = $("input:radio[name='pay_way']:checked").val();
             var balance = $('#balance').val();
             var score = $('#score').val();
@@ -439,6 +443,15 @@
             var speed_limit_per_con = $('#speed_limit_per_con').val();
             var speed_limit_per_user = $('#speed_limit_per_user').val();
 
+            // 用途
+            var usage = '';
+            $.each($("input:checkbox[name='usage']"), function(){
+                if (this.checked) {
+                    usage += $(this).val() + ',';
+                }
+            });
+            usage = usage.substring(0, usage.length - 1);
+
             $.ajax({
                 type: "POST",
                 url: "{{url('admin/editUser')}}",
@@ -446,11 +459,15 @@
                 data: {_token:_token, id:id, username: username, password:password, usage:usage, pay_way:pay_way, balance:balance, score:score, status:status, labels:labels, enable_time:enable_time, expire_time:expire_time, gender:gender, wechat:wechat, qq:qq, is_admin:is_admin, remark:remark, level:level, port:port, passwd:passwd, method:method, transfer_enable:transfer_enable, enable:enable, protocol:protocol, protocol_param:protocol_param, obfs:obfs, obfs_param:obfs_param, speed_limit_per_con:speed_limit_per_con, speed_limit_per_user:speed_limit_per_user},
                 dataType: 'json',
                 success: function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
-                        if (ret.status == 'success') {
+                    if (ret.status == 'success') {
+                        layer.confirm('更新成功，是否返回？', {icon: 1, title:'提示'}, function(index) {
                             window.location.href = '{{url('admin/userList?page=') . Request::get('page')}}';
-                        }
-                    });
+
+                            layer.close(index);
+                        });
+                    } else {
+                        layer.msg(ret.message, {time:1000});
+                    }
                 }
             });
 

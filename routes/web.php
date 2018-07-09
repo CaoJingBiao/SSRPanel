@@ -19,6 +19,7 @@ Route::group(['middleware' => ['forbidden', 'user', 'admin']], function () {
     Route::get('admin/userList', 'AdminController@userList'); // 账号列表
     Route::any('admin/addUser', 'AdminController@addUser'); // 添加账号
     Route::post('admin/batchAddUsers', 'AdminController@batchAddUsers'); // 批量生成账号
+    Route::get('admin/exportSSJson', 'AdminController@exportSSJson'); // 导出原版SS的json配置信息
     Route::any('admin/editUser', 'AdminController@editUser'); // 编辑账号
     Route::post('admin/delUser', 'AdminController@delUser'); // 删除账号
     Route::get('admin/nodeList', 'AdminController@nodeList'); // 节点列表
@@ -91,6 +92,9 @@ Route::group(['middleware' => ['forbidden', 'user', 'admin']], function () {
     Route::post("admin/switchToUser", "AdminController@switchToUser"); // 转换成某个用户的身份
     Route::any("admin/decompile", "AdminController@decompile"); // SS(R)链接反解析
     Route::any("payment/callbackList", "PaymentController@callbackList"); // 有赞云支付回调日志
+    Route::get("marketing/emailList", "MarketingController@emailList"); // 邮件消息列表
+    Route::get("marketing/pushList", "MarketingController@pushList"); // 推送消息列表
+    Route::post("marketing/addPushMarketing", "MarketingController@addPushMarketing"); // 推送消息
 });
 
 Route::group(['middleware' => ['forbidden', 'user']], function () {
@@ -121,4 +125,14 @@ Route::group(['middleware' => ['forbidden', 'user']], function () {
     Route::get('payment/getStatus', 'PaymentController@getStatus'); // 获取支付单状态
     Route::get('payment/{sn}', 'PaymentController@detail'); // 支付单详情
 
+});
+
+Route::group(['middleware' => ['Muv2']], function (){ //Muv2 for V2ray
+    Route::get('mu/v2/users','Muv2\UserController@index');
+    Route::post('mu/v2/users/{id}/traffic','Muv2\UserController@addTraffic');
+    Route::post('mu/v2/nodes/{id}/online_count','Muv2\NodeController@onlineUserLog');
+    Route::post('mu/v2/nodes/{id}/info','Muv2\NodeController@info');
+    Route::get('mu/v2/nodes/{id}/users','Muv2\NodeController@users');
+    Route::get('mu/v2/nodes/{id}/v2rayUsers','Muv2\NodeController@v2rayUsers');
+    Route::post('mu/v2/nodes/{id}/traffic','Muv2\NodeController@postTraffic');
 });

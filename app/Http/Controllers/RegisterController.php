@@ -134,12 +134,27 @@ class RegisterController extends Controller
                 $affUser = User::query()->where('id', $aff)->first();
                 $referral_uid = $affUser ? $aff : 0;
             } else {
-                $referral_uid = 0;
+                // 如果使用邀请码，则将邀请码也列入aff
+                if ($code) {
+                    $inviteCode = Invite::query()->where('code', $code)->where('status', 0)->first();
+                    if ($inviteCode) {
+                        $referral_uid = $inviteCode->uid;
+                    } else {
+                        $referral_uid = 0;
+                    }
+                } else {
+                    $referral_uid = 0;
+                }
             }
 
-            // 最后一个可用端口
+            // 获取可用端口
             $last_user = User::query()->orderBy('id', 'desc')->first();
-            $port = self::$config['is_rand_port'] ? $this->getRandPort() : $last_user->port + 1;
+            $port = self::$config['is_rand_port'] ? $this->getRandPort() : $this->getOnlyPort();
+            if ($port > self::$config['max_port']) {
+                $request->session()->flash('errorMsg', '用户已满');
+
+                return Redirect::back()->withInput();
+            }
 
             // 默认加密方式、协议、混淆
             $method = SsConfig::query()->where('type', 1)->where('is_default', 1)->first();
@@ -163,29 +178,29 @@ class RegisterController extends Controller
             $user->referral_uid = $referral_uid;
             $user->save();
 
-            // 注册次数+1
             if ($user->id) {
+                // 注册次数+1
                 if (Cache::has($cacheKey)) {
                     Cache::increment($cacheKey);
                 } else {
                     Cache::put($cacheKey, 1, 1440); // 24小时
                 }
-            }
 
-            // 初始化默认标签
-            if (count(self::$config['initial_labels_for_user']) > 0 && $user->id) {
-                $labels = explode(',', self::$config['initial_labels_for_user']);
-                foreach ($labels as $label) {
-                    $userLabel = new UserLabel();
-                    $userLabel->user_id = $user->id;
-                    $userLabel->label_id = $label;
-                    $userLabel->save();
+                // 初始化默认标签
+                if (strlen(self::$config['initial_labels_for_user'])) {
+                    $labels = explode(',', self::$config['initial_labels_for_user']);
+                    foreach ($labels as $label) {
+                        $userLabel = new UserLabel();
+                        $userLabel->user_id = $user->id;
+                        $userLabel->label_id = $label;
+                        $userLabel->save();
+                    }
                 }
-            }
 
-            // 更新邀请码
-            if (self::$config['is_invite_register'] && $user->id) {
-                Invite::query()->where('id', $code->id)->update(['fuid' => $user->id, 'status' => 1]);
+                // 更新邀请码
+                if (self::$config['is_invite_register']) {
+                    Invite::query()->where('id', $code->id)->update(['fuid' => $user->id, 'status' => 1]);
+                }
             }
 
             // 发送邮件
@@ -227,9 +242,17 @@ class RegisterController extends Controller
         } else {
             $request->session()->put('register_token', makeRandStr(16));
 
+            // 如果第一次打开带返aff，则存储aff，防止再次打开无返利aff
+            if (intval($request->get('aff'))) {
+                if (!$request->session()->get('register_aff')) {
+                    $request->session()->put('register_aff', intval($request->get('aff')));
+                }
+            }
+
             $view['is_captcha'] = self::$config['is_captcha'];
             $view['is_register'] = self::$config['is_register'];
             $view['is_invite_register'] = self::$config['is_invite_register'];
+            $view['is_free_code'] = self::$config['is_free_code'];
             $view['website_analytics'] = self::$config['website_analytics'];
             $view['website_customer_service'] = self::$config['website_customer_service'];
 

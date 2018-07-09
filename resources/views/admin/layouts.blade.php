@@ -68,7 +68,7 @@
                                 <a href="{{url('/user')}}"> <i class="icon-home"></i> 个人中心 </a>
                             </li>
                             <li>
-                                <a href="{{url('admin/profile')}}"> <i class="icon-user"></i> 个人资料 </a>
+                                <a href="{{url('admin/profile')}}"> <i class="icon-user"></i> 个人设置 </a>
                             </li>
                             <li>
                                 <a href="{{url('logout')}}"> <i class="icon-key"></i> 退出 </a>
@@ -212,6 +212,27 @@
                             <a href="{{url('admin/groupList')}}" class="nav-link ">
                                 <i class="fa fa-list-ul"></i>
                                 <span class="title">节点分组</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item {{in_array(Request::path(), ['marketing/emailList', 'marketing/pushList']) ? 'active open' : ''}}">
+                    <a href="javascript:;" class="nav-link nav-toggle">
+                        <i class="fa fa-send-o"></i>
+                        <span class="title">营销管理</span>
+                        <span class="arrow"></span>
+                    </a>
+                    <ul class="sub-menu">
+                        <li class="nav-item {{in_array(Request::path(), ['marketing/emailList']) ? 'active open' : ''}}">
+                            <a href="{{url('marketing/emailList')}}" class="nav-link ">
+                                <i class="fa fa-inbox"></i>
+                                <span class="title">邮件群发</span>
+                            </a>
+                        </li>
+                        <li class="nav-item {{in_array(Request::path(), ['marketing/pushList']) ? 'active open' : ''}}">
+                            <a href="{{url('marketing/pushList')}}" class="nav-link ">
+                                <i class="fa fa-rss"></i>
+                                <span class="title">消息推送</span>
                             </a>
                         </li>
                     </ul>

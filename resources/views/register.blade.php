@@ -39,21 +39,30 @@
 <div class="content">
     <nav style="padding-bottom: 20px;text-align: center;">
         @if(app()->getLocale() == 'zh-CN')
+            <a href="{{url('lang', ['locale' => 'zh-tw'])}}">繁體中文</a>
             <a href="{{url('lang', ['locale' => 'en'])}}">English</a>
-            <a href="{{url('lang', ['locale' => 'jp'])}}">日本語</a>
-            <a href="{{url('lang', ['locale' => 'kr'])}}">한국어</a>
+            <a href="{{url('lang', ['locale' => 'ja'])}}">日本語</a>
+            <a href="{{url('lang', ['locale' => 'ko'])}}">한국어</a>
+        @elseif(app()->getLocale() == 'zh-tw')
+            <a href="{{url('lang', ['locale' => 'zh-CN'])}}">简体中文</a>
+            <a href="{{url('lang', ['locale' => 'en'])}}">English</a>
+            <a href="{{url('lang', ['locale' => 'ja'])}}">日本語</a>
+            <a href="{{url('lang', ['locale' => 'ko'])}}">한국어</a>
         @elseif(app()->getLocale() == 'en')
-            <a href="{{url('lang', ['locale' => 'zh-CN'])}}">中文</a>
-            <a href="{{url('lang', ['locale' => 'jp'])}}">日本語</a>
-            <a href="{{url('lang', ['locale' => 'kr'])}}">한국어</a>
-        @elseif(app()->getLocale() == 'kr')
-            <a href="{{url('lang', ['locale' => 'zh-CN'])}}">中文</a>
+            <a href="{{url('lang', ['locale' => 'zh-CN'])}}">简体中文</a>
+            <a href="{{url('lang', ['locale' => 'zh-tw'])}}">繁體中文</a>
+            <a href="{{url('lang', ['locale' => 'ja'])}}">日本語</a>
+            <a href="{{url('lang', ['locale' => 'ko'])}}">한국어</a>
+        @elseif(app()->getLocale() == 'ko')
+            <a href="{{url('lang', ['locale' => 'zh-CN'])}}">简体中文</a>
+            <a href="{{url('lang', ['locale' => 'zh-tw'])}}">繁體中文</a>
             <a href="{{url('lang', ['locale' => 'en'])}}">English</a>
-            <a href="{{url('lang', ['locale' => 'jp'])}}">日本語</a>
-        @elseif(app()->getLocale() == 'jp')
-            <a href="{{url('lang', ['locale' => 'zh-CN'])}}">中文</a>
+            <a href="{{url('lang', ['locale' => 'ja'])}}">日本語</a>
+        @elseif(app()->getLocale() == 'ja')
+            <a href="{{url('lang', ['locale' => 'zh-CN'])}}">简体中文</a>
+            <a href="{{url('lang', ['locale' => 'zh-tw'])}}">繁體中文</a>
             <a href="{{url('lang', ['locale' => 'en'])}}">English</a>
-            <a href="{{url('lang', ['locale' => 'kr'])}}">한국어</a>
+            <a href="{{url('lang', ['locale' => 'ko'])}}">한국어</a>
         @else
         @endif
     </nav>
@@ -71,7 +80,7 @@
                 <input class="form-control placeholder-no-fix" type="text" autocomplete="off" placeholder="{{trans('register.username_placeholder')}}" name="username" value="{{Request::old('username')}}" required />
                 <input type="hidden" name="register_token" value="{{Session::get('register_token')}}" />
                 <input type="hidden" name="_token" value="{{csrf_token()}}" />
-                <input type="hidden" name="aff" value="{{Request::get('aff')}}" />
+                <input type="hidden" name="aff" value="{{Session::get('register_aff')}}" />
             </div>
             <div class="form-group">
                 <label class="control-label visible-ie8 visible-ie9">{{trans('register.password')}}</label>
@@ -86,7 +95,9 @@
                     <label class="control-label visible-ie8 visible-ie9">{{trans('register.code')}}</label>
                     <input class="form-control placeholder-no-fix" type="text" autocomplete="off" placeholder="{{trans('register.code')}}" name="code" value="{{Request::old('code') ? Request::old('code') : Request::get('code')}}" required />
                 </div>
-                <p class="hint"> <a href="{{url('free')}}" target="_blank">{{trans('register.get_free_code')}}</a> </p>
+                @if($is_free_code)
+                    <p class="hint"> <a href="{{url('free')}}" target="_blank">{{trans('register.get_free_code')}}</a> </p>
+                @endif
             @endif
             @if($is_captcha)
             <div class="form-group" style="margin-bottom:75px;">
