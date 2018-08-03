@@ -3,16 +3,16 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Http\Models\User;
 use App\Http\Models\SsNode;
-use App\Http\Models\UserTrafficDaily;
+use App\Http\Models\User;
 use App\Http\Models\UserTrafficLog;
+use App\Http\Models\UserTrafficHourly;
 use Log;
 
-class AutoStatisticsUserDailyTrafficJob extends Command
+class AutoStatisticsUserHourlyTraffic extends Command
 {
-    protected $signature = 'autoStatisticsUserDailyTrafficJob';
-    protected $description = '自动统计用户每日流量';
+    protected $signature = 'autoStatisticsUserHourlyTraffic';
+    protected $description = '自动统计用户每小时流量';
 
     public function __construct()
     {
@@ -21,6 +21,8 @@ class AutoStatisticsUserDailyTrafficJob extends Command
 
     public function handle()
     {
+        $jobStartTime = microtime(true);
+
         $userList = User::query()->where('status', '>=', 0)->where('enable', 1)->get();
         foreach ($userList as $user) {
             // 统计一次所有节点的总和
@@ -33,13 +35,16 @@ class AutoStatisticsUserDailyTrafficJob extends Command
             }
         }
 
-        Log::info('定时任务：' . $this->description);
+        $jobEndTime = microtime(true);
+        $jobUsedTime = round(($jobEndTime - $jobStartTime), 4);
+
+        Log::info('执行定时任务【' . $this->description . '】，耗时' . $jobUsedTime . '秒');
     }
 
     private function statisticsByNode($user_id, $node_id = 0)
     {
-        $start_time = strtotime(date('Y-m-d 00:00:00', strtotime("-1 day")));
-        $end_time = strtotime(date('Y-m-d 23:59:59', strtotime("-1 day")));
+        $start_time = strtotime(date('Y-m-d H:i:s', strtotime("-1 hour")));
+        $end_time = time();
 
         $query = UserTrafficLog::query()->where('user_id', $user_id)->whereBetween('log_time', [$start_time, $end_time]);
 
@@ -52,7 +57,7 @@ class AutoStatisticsUserDailyTrafficJob extends Command
         $total = $u + $d;
         $traffic = $this->flowAutoShow($total);
 
-        $obj = new UserTrafficDaily();
+        $obj = new UserTrafficHourly();
         $obj->user_id = $user_id;
         $obj->node_id = $node_id;
         $obj->u = $u;

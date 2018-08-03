@@ -35,7 +35,7 @@ return [
     'account_bandwidth_usage'         => '트래픽 사용량',
     'account_total_traffic'           => '총',
     'account_usage_traffic'           => '이미사용',
-    'account_reset_notice'            => '매월:reset_day일에 트래픽 초기화',
+    'account_reset_notice'            => '매월 :reset_day 일에 트래픽 초기화',
     'article_title'                   => '공지사항',
     'recharge'                        => '충전',
     'enabled'                         => '정상',
@@ -49,7 +49,7 @@ return [
     'close'                           => '취소',
     'redeem_score'                    => '트래픽 ',
     'redeem'                          => '환전하기',
-    'redeem_info'                     => '총 :score 포인트，:scoreM 의 트레픽 화전가능。',
+    'redeem_info'                     => '총 :score 포인트，:score M 의 트레픽 화전가능。',
     'coupon_code'                     => '충전카드',
     'please_input_coupon'             => '충전 카드 번호를 입력하세요',
     'scan_qrcode'                     => '앱 으로 QR코드를 스켄해주시면 서버가 추가 됩니다',
@@ -94,11 +94,11 @@ return [
     'service_type_2'                  => '세트',
 
     // 流量日志
-    'traffic_log_tips'                => '주의하다：유량 통계도 갱신 지연.천인 통계도로는 이튿날 갱신하며 시간별로 통계도가 1 시간에 갱신한다.',
+    'traffic_log_tips'                => '메모:데이터 갱신 지연.',
     'traffic_log_30days'              => '30 일트래픽 사용현황',
     'traffic_log_24hours'             => '24 간트패픽 사용현환',
     'traffic_log_keywords'            => '사용된트래픽',
-    'traffic_log_unit'                => '단위M',
+    'traffic_log_unit'                => '단위 / G',
     'traffic_log_max'                 => '최대치',
 
     // 邀请码
@@ -160,6 +160,10 @@ return [
     'referral_table_none'             => '데이터 없음',
     'referral_table_apply'            => '출금신청 ',
     'referral_summary'                => '총 :total 개기록，합계리턴 :amount 원， :money 원되여야 리턴가능 합니다。',
+    'referral_apply_title'            => '현금 인출 기록',
+    'referral_apply_table_amount'     => '양',
+    'referral_apply_table_status'     => '상태',
+    'referral_apply_table_date'       => '날짜',
     'console'                         => '관리센트',
     'profile'                         => '개인정보',
     'logout'                          => '로그아웃',

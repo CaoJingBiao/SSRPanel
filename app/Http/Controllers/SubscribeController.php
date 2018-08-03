@@ -20,13 +20,6 @@ use DB;
  */
 class SubscribeController extends Controller
 {
-    protected static $config;
-
-    function __construct()
-    {
-        self::$config = $this->systemConfig();
-    }
-
     // 获取订阅信息
     public function index(Request $request, $code)
     {
@@ -44,6 +37,8 @@ class SubscribeController extends Controller
         if (empty($user)) {
             exit($this->noneNode());
         }
+
+        // TODO：需要加入防探测机制
 
         // 更新访问次数
         $subscribe->increment('times', 1);
@@ -76,7 +71,7 @@ class SubscribeController extends Controller
         $scheme = '';
         foreach ($nodeList as $key => $node) {
             // 控制显示的节点数
-            if (self::$config['subscribe_max'] && $key >= self::$config['subscribe_max']) {
+            if ($this->systemConfig['subscribe_max'] && $key >= $this->systemConfig['subscribe_max']) {
                 break;
             }
 

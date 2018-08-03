@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Response;
 use Redirect;
 use Captcha;
+use Session;
 use Cache;
 
 /**
@@ -18,13 +19,6 @@ use Cache;
  */
 class LoginController extends Controller
 {
-    protected static $config;
-
-    function __construct()
-    {
-        self::$config = $this->systemConfig();
-    }
-
     // 登录页
     public function index(Request $request)
     {
@@ -34,15 +28,15 @@ class LoginController extends Controller
             $captcha = trim($request->get('captcha'));
 
             if (empty($username) || empty($password)) {
-                $request->session()->flash('errorMsg', '请输入用户名和密码');
+                Session::flash('errorMsg', '请输入用户名和密码');
 
                 return Redirect::back();
             }
 
             // 是否校验验证码
-            if (self::$config['is_captcha']) {
+            if ($this->systemConfig['is_captcha']) {
                 if (!Captcha::check($captcha)) {
-                    $request->session()->flash('errorMsg', '验证码错误，请重新输入');
+                    Session::flash('errorMsg', '验证码错误，请重新输入');
 
                     return Redirect::back()->withInput();
                 }
@@ -50,15 +44,15 @@ class LoginController extends Controller
 
             $user = User::query()->where('username', $username)->where('password', md5($password))->first();
             if (!$user) {
-                $request->session()->flash('errorMsg', '用户名或密码错误');
+                Session::flash('errorMsg', '用户名或密码错误');
 
                 return Redirect::back()->withInput();
-            } else if ($user->status < 0) {
-                $request->session()->flash('errorMsg', '账号已禁用');
+            } else if (!$user->is_admin && $user->status < 0) {
+                Session::flash('errorMsg', '账号已禁用');
 
                 return Redirect::back();
-            } else if ($user->status == 0 && self::$config['is_active_register'] && $user->is_admin == 0) {
-                $request->session()->flash('errorMsg', '账号未激活，请先<a href="/activeUser?username=' . $user->username . '" target="_blank"><span style="color:#000">【激活账号】</span></a>');
+            } else if ($user->status == 0 && $this->systemConfig['is_active_register'] && $user->is_admin == 0) {
+                Session::flash('errorMsg', '账号未激活，请先<a href="/activeUser?username=' . $user->username . '" target="_blank"><span style="color:#000">【激活账号】</span></a>');
 
                 return Redirect::back()->withInput();
             }
@@ -76,25 +70,18 @@ class LoginController extends Controller
 
 
             // 登录送积分
-            if (self::$config['login_add_score']) {
+            if ($this->systemConfig['login_add_score']) {
                 if (!Cache::has('loginAddScore_' . md5($username))) {
-                    $score = mt_rand(self::$config['min_rand_score'], self::$config['max_rand_score']);
+                    $score = mt_rand($this->systemConfig['min_rand_score'], $this->systemConfig['max_rand_score']);
                     $ret = User::query()->where('id', $user->id)->increment('score', $score);
                     if ($ret) {
-                        $obj = new UserScoreLog();
-                        $obj->user_id = $user->id;
-                        $obj->before = $user->score;
-                        $obj->after = $user->score + $score;
-                        $obj->score = $score;
-                        $obj->desc = '登录送积分';
-                        $obj->created_at = date('Y-m-d H:i:s');
-                        $obj->save();
+                        $this->addUserScoreLog($user->id, $user->score, $user->score + $score, $score, '登录送积分');
 
                         // 登录多久后再登录可以获取积分
-                        $ttl = self::$config['login_add_score_range'] ? self::$config['login_add_score_range'] : 1440;
+                        $ttl = $this->systemConfig['login_add_score_range'] ? $this->systemConfig['login_add_score_range'] : 1440;
                         Cache::put('loginAddScore_' . md5($username), '1', $ttl);
 
-                        $request->session()->flash('successMsg', '欢迎回来，系统自动赠送您 ' . $score . ' 积分，您可以用它兑换流量包');
+                        Session::flash('successMsg', '欢迎回来，系统自动赠送您 ' . $score . ' 积分，您可以用它兑换流量包');
                     }
                 }
             }
@@ -102,7 +89,7 @@ class LoginController extends Controller
             // 重新取出用户信息
             $userInfo = User::query()->where('id', $user->id)->first();
 
-            $request->session()->put('user', $userInfo->toArray());
+            Session::put('user', $userInfo->toArray());
 
             // 根据权限跳转
             if ($user->is_admin) {
@@ -114,7 +101,7 @@ class LoginController extends Controller
             if ($request->cookie("remember")) {
                 $u = User::query()->where("remember_token", $request->cookie("remember"))->first();
                 if ($u) {
-                    $request->session()->put('user', $u->toArray());
+                    Session::put('user', $u->toArray());
 
                     if ($u->is_admin) {
                         return Redirect::to('admin');
@@ -124,10 +111,11 @@ class LoginController extends Controller
                 }
             }
 
-            $view['is_captcha'] = self::$config['is_captcha'];
-            $view['is_register'] = self::$config['is_register'];
-            $view['website_analytics'] = self::$config['website_analytics'];
-            $view['website_customer_service'] = self::$config['website_customer_service'];
+            $view['is_captcha'] = $this->systemConfig['is_captcha'];
+            $view['is_register'] = $this->systemConfig['is_register'];
+            $view['website_home_logo'] = $this->systemConfig['website_home_logo'];
+            $view['website_analytics'] = $this->systemConfig['website_analytics'];
+            $view['website_customer_service'] = $this->systemConfig['website_customer_service'];
 
             return Response::view('login', $view);
         }
@@ -136,7 +124,7 @@ class LoginController extends Controller
     // 退出
     public function logout(Request $request)
     {
-        $request->session()->flush();
+        Session::flush();
 
         return Redirect::to('login')->cookie('remember', "", 36000);
     }

@@ -42,6 +42,10 @@ CREATE TABLE `ss_node` (
   `traffic` BIGINT(20) NOT NULL DEFAULT '1000' COMMENT '每月可用流量，单位G',
   `monitor_url` VARCHAR(255) NULL DEFAULT NULL COMMENT '监控地址',
   `is_subscribe` TINYINT(4) NULL DEFAULT '1' COMMENT '是否允许用户订阅该节点：0-否、1-是',
+  `ssh_port` SMALLINT(6) UNSIGNED NOT NULL DEFAULT '22' COMMENT 'SSH端口',
+  `icmp` TINYINT(4) NOT NULL DEFAULT '1' COMMENT 'ICMP检测：-2-内外都不通、-1-内不通外通、0-外不通内通、1-内外都通',
+  `tcp` TINYINT(4) NOT NULL DEFAULT '1' COMMENT 'TCP检测：-2-内外都不通、-1-内不通外通、0-外不通内通、1-内外都通',
+  `udp` TINYINT(4) NOT NULL DEFAULT '1' COMMENT 'ICMP检测：-2-内外都不通、-1-内不通外通、0-外不通内通、1-内外都通',
   `compatible` TINYINT(4) NULL DEFAULT '0' COMMENT '兼容SS',
   `single` TINYINT(4) NULL DEFAULT '0' COMMENT '单端口多用户：0-否、1-是',
   `single_force` TINYINT(4) NULL DEFAULT NULL COMMENT '模式：0-兼容模式、1-严格模式',
@@ -301,7 +305,7 @@ INSERT INTO `config` VALUES ('27', 'reset_traffic', 1);
 INSERT INTO `config` VALUES ('28', 'default_days', 7);
 INSERT INTO `config` VALUES ('29', 'subscribe_max', 3);
 INSERT INTO `config` VALUES ('30', 'min_port', 10000);
-INSERT INTO `config` VALUES ('31', 'max_port', 40000);
+INSERT INTO `config` VALUES ('31', 'max_port', 20000);
 INSERT INTO `config` VALUES ('32', 'is_captcha', 0);
 INSERT INTO `config` VALUES ('33', 'is_traffic_ban', 1);
 INSERT INTO `config` VALUES ('34', 'traffic_ban_value', 10);
@@ -333,6 +337,11 @@ INSERT INTO `config` VALUES ('59', 'is_push_bear', 0);
 INSERT INTO `config` VALUES ('60', 'push_bear_send_key', '');
 INSERT INTO `config` VALUES ('61', 'push_bear_qrcode', '');
 INSERT INTO `config` VALUES ('62', 'is_ban_status', 0);
+INSERT INTO `config` VALUES ('63', 'is_namesilo', 0);
+INSERT INTO `config` VALUES ('64', 'namesilo_key', '');
+INSERT INTO `config` VALUES ('65', 'website_logo', '');
+INSERT INTO `config` VALUES ('66', 'website_home_logo', '');
+INSERT INTO `config` VALUES ('67', 'is_tcp_check', 0);
 
 
 -- ----------------------------
@@ -443,6 +452,7 @@ CREATE TABLE `goods` (
   `price` int(11) NOT NULL DEFAULT '0' COMMENT '商品售价，单位分',
   `desc` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '商品描述',
   `days` int(11) NOT NULL DEFAULT '30' COMMENT '有效期',
+  `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序',
   `is_del` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否已删除：0-否、1-是',
   `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '状态：0-下架、1-上架',
   `created_at` datetime DEFAULT NULL COMMENT '创建时间',
@@ -481,6 +491,7 @@ CREATE TABLE `coupon_log` (
   `coupon_id` int(11) NOT NULL DEFAULT '0' COMMENT '优惠券ID',
   `goods_id` int(11) NOT NULL DEFAULT '0' COMMENT '商品ID',
   `order_id` int(11) NOT NULL DEFAULT '0' COMMENT '订单ID',
+  `desc` varchar(50) NOT NULL DEFAULT '' COMMENT '备注',
   `created_at` datetime DEFAULT NULL COMMENT '创建时间',
   `updated_at` datetime DEFAULT NULL COMMENT '最后更新时间',
   PRIMARY KEY (`id`)

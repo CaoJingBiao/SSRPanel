@@ -22,16 +22,17 @@
 22.中转节点（开发中）
 23.强大的营销管理：PushBear群发消息
 24.telegram机器人（开发中）
-25.防墙监测，节点被墙自动提醒（TCP阻断、Ping失效）（开发中）
+25.防墙监测，节点被墙自动提醒（TCP阻断）
 ````
 
 ## 演示&交流
 ````
 官方站：http://www.ssrpanel.com
 演示站：http://demo.ssrpanel.com （用户名：admin 密码：123456，请勿修改密码）
-telegram订阅频道：https://t.me/ssrpanel
-telegram千人讨论群已解散，有问题提issues，或者进小群讨论（打赏的时候记得留言，我会回复你我的微信号）
-199是设定的门槛，因为进群后如果捣乱就踢，这样的成本会拦住较多无聊的捣乱者
+telegram订阅频道：https://t.me/ssrpanel （获取最新资讯）
+telegram千人讨论群已解散，有问题提issues，或者进小群讨论（打赏的时候记得留言你的微信号，不要打“微信”俩字，会被屏蔽）
+199是设定的门槛，因为进群后如果捣乱就踢，这样的成本会拦住较多无聊的捣乱者、伸手党
+特别讨厌伸手党，一个开源项目，如果你用的不爽可以不用，识趣点别哔哔，如果你想商业化，先掂量一下你愿意掏多少钱买程序？
 ````
 
 ## 捐赠
@@ -55,51 +56,31 @@ MYSQL 5.5 （推荐5.6+）
 内存 1G+ 
 磁盘空间 10G+
 PHP必须开启curl、gd、fileinfo、openssl、mbstring组件
-安装完成后记得编辑config/app.php中 'debug' => true, 改为 false
+安装完成后记得编辑.env中 APP_DEBUG 改为 false
 ````
 
 #### 拉取代码
 ````
 cd /home/wwwroot/
-git clone https://github.com/ssrpanel/ssrpanel.git
+git clone https://github.com/ssrpanel/SSRPanel.git
+````
+
+#### 配置数据库
+````
+1.创建一个utf8mb4的数据库
+2.编辑 .env 文件，修改 DB_ 开头的值
+3.导入 sql/db.sql 到数据库
 ````
 
 #### 安装面板
 ````
-cd ssrpanel/
+cd SSRPanel/
+cp .env.example .env
+（然后 vi .env 修改数据库的连接信息）
 php composer.phar install
 php artisan key:generate
 chown -R www:www storage/
 chmod -R 777 storage/
-````
-
-#### 配置数据库
-
-##### 连接数据库
-````
-1.创建一个utf8mb4的数据库
-2.编辑config/database.php，编辑mysql选项中如下配置值：host、port、database、username、password
-````
-
-##### 自动部署
-
-###### 迁移(创建表结构)
-````
-php artisan migrate
-````
-
-###### 播种(填充数据)
-````
-php artisan db:seed --class=ConfigTableSeeder
-php artisan db:seed --class=CountryTableSeeder
-php artisan db:seed --class=LevelTableSeeder
-php artisan db:seed --class=SsConfigTableSeeder
-php artisan db:seed --class=UserTableSeeder
-````
-
-##### 手工部署
-````
-迁移未经完整测试，存在BUG，可以手动将sql/db.sql导入到创建好的数据库
 ````
 
 #### 加入NGINX的URL重写规则
@@ -144,27 +125,15 @@ crontab -e -u www
 ## 邮件配置
 ###### SMTP
 ````
-编辑 config\mail.php
-
-请自行配置如下内容
-'driver' => 'smtp',
-'host' => 'smtp.exmail.qq.com',
-'port' => 465,
-'from' => [
-    'address' => 'xxx@qq.com',
-    'name' => 'SSRPanel',
-],
-'encryption' => 'ssl',
-'username' => 'xxx@qq.com',
-'password' => 'xxxxxx',
+编辑 .env 文件，修改 MAIL_ 开头的配置
 ````
 
 ###### Mailgun
 ````
-编辑 config\mail.php
-将 driver 值改为 mailgun
+编辑 .env 文件
+将 MAIL_DRIVER 值改为 mailgun
 
-编辑 config/services.php
+然后编辑 config/services.php
 
 请自行配置如下内容
 'mailgun' => [
@@ -184,7 +153,7 @@ crontab -e -u www
 
 ## 英文版
 ````
-修改 config/app.php 下的 locale 值为 en
+修改 .env 的 APP_LOCALE 值为 en
 欢迎提交其他语言的语言包，语言包在：resources/lang下
 ````
 
@@ -206,7 +175,7 @@ sh initcfg.sh
 配置 usermysql.json 里的数据库链接，NODE_ID就是节点ID，对应面板后台里添加的节点的自增ID，所以请先把面板搭好，搭好后进后台添加节点
 ````
 
-###### 一键自动部署(基于SSR3.4)
+###### 一键自动部署(基于SSR3.4)(不推荐，该版本有内存溢出BUG)
 ````
 wget -N --no-check-certificate https://raw.githubusercontent.com/ssrpanel/ssrpanel/master/server/deploy_ssr.sh;chmod +x deploy_ssr.sh;./deploy_ssr.sh
 
@@ -284,6 +253,14 @@ vim user-config.json
 提示：配置单端口最好先看下这个WIKI，防止才踩坑：https://github.com/ssrpanel/ssrpanel/wiki/%E5%8D%95%E7%AB%AF%E5%8F%A3%E5%A4%9A%E7%94%A8%E6%88%B7%E7%9A%84%E5%9D%91
 
 ````
+## 代码更新
+````
+进入到SSRPanel目录下
+1.手动更新： git pull
+2.强制更新： sh ./update.sh 
+
+如果你更改了本地文件，手动更新会提示错误需要合并代码（自己搞定），强制更新会直接覆盖你本地所有更改过的文件
+````
 
 ## 校时
 ````
@@ -313,4 +290,7 @@ ntpdate cn.pool.ntp.org
 - [@ToyoDAdoubi](https://github.com/ToyoDAdoubi)
 - [@91yun](https://github.com/91yun)
 - [@Akkariiin](https://github.com/shadowsocksrr)
+- [@tonychanczm](https://github.com/tonychanczm)
+- [ipcheck](https://ipcheck.need.sh)
+- [check-host](https://www.check-host.net)
 

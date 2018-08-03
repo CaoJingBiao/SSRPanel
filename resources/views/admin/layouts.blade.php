@@ -40,8 +40,7 @@
     <div class="page-header-inner ">
         <!-- BEGIN LOGO -->
         <div class="page-logo">
-            <a href="{{url('/')}}">
-                <img src="/assets/images/logo.png" alt="logo" class="logo-default" /> </a>
+            <a href="{{url('/')}}"> <img src="/assets/images/logo.png" alt="logo" class="logo-default" /> </a>
             <div class="menu-toggler sidebar-toggler">
                 <!-- DOC: Remove the above "hide" to enable the sidebar toggler button on header -->
             </div>
@@ -358,6 +357,17 @@
 <!-- BEGIN THEME LAYOUT SCRIPTS -->
 <script src="/assets/layouts/layout4/scripts/layout.min.js" type="text/javascript"></script>
 <!-- END THEME LAYOUT SCRIPTS -->
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-122312249-1"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-122312249-1');
+</script>
+
 </body>
 
 </html>

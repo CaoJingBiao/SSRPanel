@@ -38,7 +38,7 @@
         <p><br></p>
         <div class="number font-red"> <img src="{{asset('assets/images/404.gif')}}" /> </div>
         <p><br></p>
-        <a href="{{url('admin')}}" class="btn default"> {{trans('404.back')}} </a>
+        <a href="{{url('/')}}" class="btn default"> {{trans('404.back')}} </a>
     </div>
 </div>
 <!--[if lt IE 9]>
@@ -56,6 +56,17 @@
 <!-- END CORE PLUGINS -->
 <!-- BEGIN THEME GLOBAL SCRIPTS -->
 <script src="/assets/global/scripts/app.min.js" type="text/javascript"></script>
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-122312249-1"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-122312249-1');
+</script>
+
 <!-- END THEME GLOBAL SCRIPTS -->
 <!-- BEGIN THEME LAYOUT SCRIPTS -->
 <!-- END THEME LAYOUT SCRIPTS -->
