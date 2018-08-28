@@ -2,7 +2,7 @@
 
 return [
     'panel'                           => '控制面板',
-    'subscribe_address'               => '我的订阅地址',
+    'subscribe_address'               => '订阅服务',
     'copy_subscribe_address'          => '复制',
     'exchange_subscribe'              => '更换',
     'subscribe_warning'               => '警告：该订阅地址仅限个人使用，请勿传播该地址，否则会导致您的账号流量使用情况异常触发自动封号机制。',
@@ -11,7 +11,7 @@ return [
     'subscribe_baned'                 => '您的订阅功能被禁用，请联系管理员恢复',
 
     // 菜单
-    'home'                            => '我的节点',
+    'home'                            => '个人中心',
     'services'                        => '购买服务',
     'traffic_log'                     => '流量记录',
     'invite_code'                     => '邀请码',
@@ -107,7 +107,7 @@ return [
     'invite_code_make'                => '生成邀请码',
     'invite_code_button'              => '生成',
     'invite_code_tips1'               => '可生成',
-    'invite_code_tips2'               => '个邀请码',
+    'invite_code_tips2'               => '枚邀请码，7日内有效',
     'invite_code_my_codes'            => '我的邀请码',
     'invite_code_table_name'          => '邀请码',
     'invite_code_table_date'          => '有效期',
@@ -123,6 +123,7 @@ return [
     'invoice_title'                   => '消费记录',
     'invoice_table_id'                => '编号',
     'invoice_table_name'              => '服务',
+    'invoice_table_pay_way'           => '支付方式',
     'invoice_table_price'             => '金额',
     'invoice_table_create_date'       => '购买日期',
     'invoice_table_expire_at'         => '到期时间',
@@ -133,6 +134,7 @@ return [
     'invoice_table_wait_confirm'      => '待确认',
     'invoice_table_wait_active'       => '使用中',
     'invoice_table_expired'           => '已过期',
+    'invoice_table_goods_deleted'     => '[服務已刪除]',
 
     // 工单
     'ticket_title'                    => '我的服务单',
@@ -168,7 +170,7 @@ return [
     'referral_apply_table_date'       => '提现日期',
     'console'                         => '管理中心',
     'profile'                         => '个人设置',
-    'logout'                          => '退出登入',
+    'logout'                          => '退出',
     'promote_link'                    => '通过您的推广链接注册并激活，你们双方都将获得 :traffic 流量奖励；当他们消费时，您将获得他们消费金额的 :referral_percent% 作为奖励。',
     'promote_invite_code'             => '通过您的邀请码注册并激活，你们双方都将获得 :traffic 流量奖励；当他们消费时，您将获得他们消费金额的 :referral_percent% 作为奖励。',
 ];

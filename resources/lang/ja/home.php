@@ -2,7 +2,7 @@
 
 return [
     'panel'                           => 'コントロールパネル',
-    'subscribe_address'               => '私の購読URL',
+    'subscribe_address'               => 'サービスを購読する',
     'copy_subscribe_address'          => 'コピー',
     'exchange_subscribe'              => '変更',
     'subscribe_warning'               => '警告：この購読URLは個人用です。このURLは拡散しないでください。それ以外の場合は、アカウントのデータ通信量が異常である可能性があります。',
@@ -107,7 +107,7 @@ return [
     'invite_code_make'                => '招待コードを生成する',
     'invite_code_button'              => '生成する',
     'invite_code_tips1'               => '生成できる',
-    'invite_code_tips2'               => '枚の招待コード',
+    'invite_code_tips2'               => '枚の招待コード，7日以内有効',
     'invite_code_my_codes'            => '私の招待コード',
     'invite_code_table_name'          => '招待コード',
     'invite_code_table_date'          => '有効期限',
@@ -123,6 +123,7 @@ return [
     'invoice_title'                   => 'ビル',
     'invoice_table_id'                => 'ビル番号',
     'invoice_table_name'              => 'サービス',
+    'invoice_table_pay_way'           => '支払い方式',
     'invoice_table_price'             => '金額',
     'invoice_table_create_date'       => '購入日',
     'invoice_table_expire_at'         => '有効期限',
@@ -133,6 +134,7 @@ return [
     'invoice_table_wait_confirm'      => '確認を待っています',
     'invoice_table_wait_active'       => '使用中',
     'invoice_table_expired'           => '期限が切れた',
+    'invoice_table_goods_deleted'     => '[削除]',
 
     // 工单
     'ticket_title'                    => '私のサービスリスト',

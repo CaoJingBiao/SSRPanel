@@ -2,7 +2,7 @@
 
 return [
     'panel'                           => '控制台',
-    'subscribe_address'               => '我的訂閱地址',
+    'subscribe_address'               => '訂閱服務',
     'copy_subscribe_address'          => '複製',
     'exchange_subscribe'              => '更換',
     'subscribe_warning'               => '注意：該訂閱地址僅限個人使用，請勿傳播該地址，這會導致您的帳號流量使用情况异常。',
@@ -107,7 +107,7 @@ return [
     'invite_code_make'                => '生成邀請碼',
     'invite_code_button'              => '生成',
     'invite_code_tips1'               => '可生成',
-    'invite_code_tips2'               => '个邀請碼',
+    'invite_code_tips2'               => '枚邀請碼，7日內有效',
     'invite_code_my_codes'            => '我的邀請碼',
     'invite_code_table_name'          => '邀請碼',
     'invite_code_table_date'          => '有效期',
@@ -123,6 +123,7 @@ return [
     'invoice_title'                   => '消費記錄',
     'invoice_table_id'                => '編號',
     'invoice_table_name'              => '服務',
+    'invoice_table_pay_way'           => '支付方式',
     'invoice_table_price'             => '金額',
     'invoice_table_create_date'       => '購買日期',
     'invoice_table_expire_at'         => '到期時間',
@@ -133,6 +134,7 @@ return [
     'invoice_table_wait_confirm'      => '待確認',
     'invoice_table_wait_active'       => '使用中',
     'invoice_table_expired'           => '已過期',
+    'invoice_table_goods_deleted'     => '[服務已刪除]',
 
     // 工单
     'ticket_title'                    => '我的服務單',

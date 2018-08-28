@@ -28,7 +28,8 @@ use App\Http\Models\UserSubscribe;
 use App\Http\Models\UserTrafficDaily;
 use App\Http\Models\UserTrafficHourly;
 use App\Http\Models\UserTrafficLog;
-use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Illuminate\Http\Request;
 use Redirect;
 use Response;
@@ -793,7 +794,7 @@ class AdminController extends Controller
     // 文章列表
     public function articleList(Request $request)
     {
-        $view['articleList'] = Article::query()->where('is_del', 0)->orderBy('sort', 'desc')->paginate(15)->appends($request->except('page'));
+        $view['list'] = Article::query()->where('is_del', 0)->orderBy('sort', 'desc')->paginate(15)->appends($request->except('page'));
 
         return Response::view('admin/articleList', $view);
     }
@@ -868,12 +869,12 @@ class AdminController extends Controller
     {
         $view['groupList'] = SsGroup::query()->paginate(15)->appends($request->except('page'));
 
-        $level_list = $this->levelList();
-        $level_dict = [];
-        foreach ($level_list as $level) {
-            $level_dict[$level['level']] = $level['level_name'];
+        $levelList = $this->levelList();
+        $levelMap = [];
+        foreach ($levelList as $vo) {
+            $levelMap[$vo['level']] = $vo['level_name'];
         }
-        $view['level_dict'] = $level_dict;
+        $view['levelMap'] = $levelMap;
 
         return Response::view('admin/groupList', $view);
     }
@@ -889,7 +890,7 @@ class AdminController extends Controller
 
             return Response::json(['status' => 'success', 'data' => '', 'message' => '添加成功']);
         } else {
-            $view['level_list'] = $this->levelList();
+            $view['levelList'] = $this->levelList();
 
             return Response::view('admin/addGroup', $view);
         }
@@ -917,7 +918,7 @@ class AdminController extends Controller
             }
         } else {
             $view['group'] = SsGroup::query()->where('id', $id)->first();
-            $view['level_list'] = $this->levelList();
+            $view['levelList'] = $this->levelList();
 
             return Response::view('admin/editGroup', $view);
         }
@@ -929,8 +930,8 @@ class AdminController extends Controller
         $id = $request->get('id');
 
         // 检查是否该分组下是否有节点
-        $group_node = SsGroupNode::query()->where('group_id', $id)->get();
-        if (!$group_node->isEmpty()) {
+        $ssGroupNodeCount = SsGroupNode::query()->where('group_id', $id)->count();
+        if ($ssGroupNodeCount) {
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '删除失败：该分组下有节点关联，请先解除关联']);
         }
 
@@ -1005,6 +1006,7 @@ class AdminController extends Controller
         return Response::view('admin/subscribeLog', $view);
     }
 
+    // 设置用户的订阅的状态
     public function setSubscribeStatus(Request $request)
     {
         $id = $request->get('id');
@@ -1042,7 +1044,7 @@ class AdminController extends Controller
                 $str = '';
                 if (false !== strpos($item, 'ssr://')) {
                     $str = mb_substr($item, 6);
-                } else if (false !== strpos($item, 'ss://')) {
+                } elseif (false !== strpos($item, 'ss://')) {
                     $str = mb_substr($item, 5);
                 }
 
@@ -1249,8 +1251,7 @@ class AdminController extends Controller
             $obfs_param = $user->obfs_param ? $user->obfs_param : $node->obfs_param;
             $protocol_param = $node->single ? $user->port . ':' . $user->passwd : $user->protocol_param;
 
-            $ssr_str = '';
-            $ssr_str .= ($node->server ? $node->server : $node->ip) . ':' . ($node->single ? $node->single_port : $user->port);
+            $ssr_str = ($node->server ? $node->server : $node->ip) . ':' . ($node->single ? $node->single_port : $user->port);
             $ssr_str .= ':' . ($node->single ? $node->single_protocol : $user->protocol) . ':' . ($node->single ? $node->single_method : $user->method);
             $ssr_str .= ':' . ($node->single ? $node->single_obfs : $user->obfs) . ':' . ($node->single ? base64url_encode($node->single_passwd) : base64url_encode($user->passwd));
             $ssr_str .= '/?obfsparam=' . base64url_encode($obfs_param);
@@ -1263,9 +1264,8 @@ class AdminController extends Controller
             $ssr_scheme = 'ssr://' . $ssr_str;
 
             // 生成ss scheme
-            $ss_str = '';
-            $ss_str .= $user->method . ':' . $user->passwd . '@';
-            $ss_str .= $node->server . ':' . $user->port;
+            $ss_str = $user->method . ':' . $user->passwd . '@';
+            $ss_str .= ($node->server ? $node->server : $node->ip) . ':' . $user->port;
             $ss_str = base64url_encode($ss_str) . '#' . 'VPN';
             $ss_scheme = 'ss://' . $ss_str;
 
@@ -1277,11 +1277,12 @@ class AdminController extends Controller
             $txt .= "远程端口：" . ($node->single ? $node->single_port : $user->port) . "\r\n";
             $txt .= "密码：" . ($node->single ? $node->single_passwd : $user->passwd) . "\r\n";
             $txt .= "加密方法：" . ($node->single ? $node->single_method : $user->method) . "\r\n";
+            $txt .= "路由：绕过局域网及中国大陆地址\r\n\r\n";
             $txt .= "协议：" . ($node->single ? $node->single_protocol : $user->protocol) . "\r\n";
             $txt .= "协议参数：" . ($node->single ? $user->port . ':' . $user->passwd : $user->protocol_param) . "\r\n";
             $txt .= "混淆方式：" . ($node->single ? $node->single_obfs : $user->obfs) . "\r\n";
             $txt .= "混淆参数：" . ($user->obfs_param ? $user->obfs_param : $node->obfs_param) . "\r\n";
-            $txt .= "本地端口：1080\r\n路由：绕过局域网及中国大陆地址";
+            $txt .= "本地端口：1080\r\n";
 
             $node->txt = $txt;
             $node->ssr_scheme = $ssr_scheme;
@@ -1351,7 +1352,7 @@ EOF;
                 Session::flash('errorMsg', '旧密码错误，请重新输入');
 
                 return Redirect::back();
-            } else if ($user->password == $new_password) {
+            } elseif ($user->password == $new_password) {
                 Session::flash('errorMsg', '新密码不可与旧密码一样，请重新输入');
 
                 return Redirect::back();
@@ -1428,9 +1429,17 @@ EOF;
             ];
         }
 
+        // 本月天数数据
+        $monthDays = [];
+        $monthHasDays = date("t");
+        for ($i = 1; $i <= $monthHasDays; $i++) {
+            $monthDays[] = $i;
+        }
+
         $view['trafficDaily'] = $trafficDaily;
         $view['trafficHourly'] = $trafficHourly;
         $view['username'] = $user->username;
+        $view['monthDays'] = "'" . implode("','", $monthDays) . "'";
 
         return Response::view('admin/userMonitor', $view);
     }
@@ -1645,32 +1654,32 @@ EOF;
         $level = $request->get('level');
         $level_name = $request->get('level_name');
 
-        if (empty($id)) {
+        if (!$id) {
             return Response::json(['status' => 'fail', 'data' => '', 'message' => 'ID不能为空']);
         }
 
-        if (empty($level)) {
+        if (!$level) {
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '等级不能为空']);
         }
 
-        if (empty($level_name)) {
+        if (!$level_name) {
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '等级名称不能为空']);
         }
 
         $le = Level::query()->where('id', $id)->first();
-        if (empty($le)) {
+        if (!$le) {
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '等级不存在']);
         }
 
         // 校验该等级下是否存在关联分组
-        $existGroups = SsGroup::query()->where('level', $le->level)->get();
-        if (!$existGroups->isEmpty()) {
+        $ssGroupCount = SsGroup::query()->where('level', $le->level)->count();
+        if ($ssGroupCount) {
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '该等级下存在关联分组，请先取消关联']);
         }
 
         // 校验该等级下是否存在关联账号
-        $existUsers = User::query()->where('level', $le->level)->get();
-        if (!$existUsers->isEmpty()) {
+        $userCount = User::query()->where('level', $le->level)->count();
+        if ($userCount) {
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '该等级下存在关联账号，请先取消关联']);
         }
 
@@ -1838,15 +1847,22 @@ EOF;
         }
 
         // 如果开启用户邮件重置密码，则先设置网站名称和网址
-        if (($name == 'is_reset_password' || $name == 'is_active_register') && $value == '1') {
+        if (in_array($name, ['is_reset_password', 'is_active_register', 'is_youzan']) && $value == '1') {
             $config = Config::query()->where('name', 'website_name')->first();
             if ($config->value == '') {
-                return Response::json(['status' => 'fail', 'data' => '', 'message' => '设置失败：开启重置密码需要先设置【网站名称】']);
+                return Response::json(['status' => 'fail', 'data' => '', 'message' => '设置失败：启用该配置需要先设置【网站名称】']);
             }
 
             $config = Config::query()->where('name', 'website_url')->first();
             if ($config->value == '') {
-                return Response::json(['status' => 'fail', 'data' => '', 'message' => '设置失败：开启重置密码需要先设置【网站地址】']);
+                return Response::json(['status' => 'fail', 'data' => '', 'message' => '设置失败：启用该配置需要先设置【网站地址】']);
+            }
+        }
+
+        // 演示环境禁止修改有赞支付
+        if (env('APP_DEMO')) {
+            if (in_array($name, ['youzan_client_id', 'youzan_client_secret', 'kdt_id'])) {
+                return Response::json(['status' => 'fail', 'data' => '', 'message' => '演示环境禁止修改有赞支付配置']);
             }
         }
 
@@ -1865,34 +1881,6 @@ EOF;
         Config::query()->where('name', 'referral_percent')->update(['value' => $value]);
 
         return Response::json(['status' => 'success', 'data' => '', 'message' => '设置成功']);
-    }
-
-    // 设置微信、支付宝二维码（已废弃）
-    public function setQrcode(Request $request)
-    {
-        // 微信二维码
-        if ($request->hasFile('wechat_qrcode')) {
-            $file = $request->file('wechat_qrcode');
-            $type = $file->getClientOriginalExtension();
-            $name = date('YmdHis') . mt_rand(1000, 2000) . '.' . $type;
-            $move = $file->move(base_path() . '/public/upload/image/qrcode/', $name);
-            $wechat_qrcode = $move ? '/upload/image/qrcode/' . $name : '';
-
-            Config::query()->where('name', 'wechat_qrcode')->update(['value' => $wechat_qrcode]);
-        }
-
-        // 支付宝二维码
-        if ($request->hasFile('alipay_qrcode')) {
-            $file = $request->file('alipay_qrcode');
-            $type = $file->getClientOriginalExtension();
-            $name = date('YmdHis') . mt_rand(1000, 2000) . '.' . $type;
-            $move = $file->move(base_path() . '/public/upload/image/qrcode/', $name);
-            $alipay_qrcode = $move ? '/upload/image/qrcode/' . $name : '';
-
-            Config::query()->where('name', 'alipay_qrcode')->update(['value' => $alipay_qrcode]);
-        }
-
-        return Redirect::back();
     }
 
     // 邀请码列表
@@ -1926,22 +1914,26 @@ EOF;
     {
         $inviteList = Invite::query()->where('status', 0)->orderBy('id', 'asc')->get();
 
-        $filename = '邀请码' . date('Ymd');
-        Excel::create($filename, function ($excel) use ($inviteList) {
-            $excel->sheet('邀请码', function ($sheet) use ($inviteList) {
-                $sheet->row(1, [
-                    '邀请码', '有效期'
-                ]);
+        $filename = '邀请码' . date('Ymd') . '.xlsx';
 
-                if (!$inviteList->isEmpty()) {
-                    foreach ($inviteList as $k => $vo) {
-                        $sheet->row($k + 2, [
-                            $vo->code, $vo->dateline
-                        ]);
-                    }
-                }
-            });
-        })->export('xls');
+        $spreadsheet = new Spreadsheet();
+        $spreadsheet->getProperties()->setCreator('SSRPanel')->setLastModifiedBy('SSRPanel')->setTitle('邀请码')->setSubject('邀请码')->setDescription('')->setKeywords('')->setCategory('');
+
+        $spreadsheet->setActiveSheetIndex(0);
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('邀请码');
+        $sheet->fromArray(['邀请码', '有效期'], null);
+
+        foreach ($inviteList as $k => $vo) {
+            $sheet->fromArray([$vo->code, $vo->dateline], null, 'A' . ($k + 2));
+        }
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); // 输出07Excel文件
+        //header('Content-Type:application/vnd.ms-excel'); // 输出Excel03版本文件
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
     }
 
     // 提现申请列表
@@ -2039,7 +2031,7 @@ EOF;
             $log_ids = explode(',', $referralApply->link_logs);
             if ($referralApply && $status == 1) {
                 ReferralLog::query()->whereIn('id', $log_ids)->update(['status' => 1]);
-            } else if ($referralApply && $status == 2) {
+            } elseif ($referralApply && $status == 2) {
                 ReferralLog::query()->whereIn('id', $log_ids)->update(['status' => 2]);
             }
         }
