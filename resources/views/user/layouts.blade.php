@@ -41,7 +41,7 @@
         <!-- BEGIN LOGO -->
         <div class="page-logo">
             @if($website_logo)
-                <a href="{{url('/')}}"><img src="{{$website_logo}}" alt="logo" class="logo-default" style="width:110px; height:20px;"/> </a>
+                <a href="{{url('/')}}"><img src="{{$website_logo}}" alt="logo" class="logo-default" style="width:150px; height:30px;"/> </a>
             @else
                 <a href="{{url('/')}}"><img src="/assets/images/logo.png" alt="logo" class="logo-default" /> </a>
             @endif
@@ -110,7 +110,7 @@
             <!-- DOC: Set data-keep-expand="true" to keep the submenues expanded -->
             <!-- DOC: Set data-auto-speed="200" to adjust the sub menu slide up/down speed -->
             <ul class="page-sidebar-menu" data-keep-expanded="false" data-auto-scroll="true" data-slide-speed="200">
-                <li class="nav-item start {{in_array(Request::path(), ['/', 'subscribe', 'profile', 'article']) ? 'active open' : ''}}">
+                <li class="nav-item start {{in_array(Request::path(), ['/', 'subscribe', 'profile']) ? 'active open' : ''}}">
                     <a href="/" class="nav-link nav-toggle">
                         <i class="icon-home"></i>
                         <span class="title">{{trans('home.home')}}</span>
@@ -155,6 +155,12 @@
                     </a>
                 </li>
                 @endif
+                <li class="nav-item {{in_array(Request::path(), ['help', 'article']) ? 'active open' : ''}}">
+                    <a href="{{url('help')}}" class="nav-link nav-toggle">
+                        <i class="fa fa-bank"></i>
+                        <span class="title">{{trans('home.help')}}</span>
+                    </a>
+                </li>
             </ul>
             <!-- END SIDEBAR MENU -->
         </div>

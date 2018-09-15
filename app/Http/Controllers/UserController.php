@@ -20,6 +20,7 @@ use App\Http\Models\Ticket;
 use App\Http\Models\TicketReply;
 use App\Http\Models\User;
 use App\Http\Models\UserLabel;
+use App\Http\Models\UserLoginLog;
 use App\Http\Models\UserSubscribe;
 use App\Http\Models\UserTrafficDaily;
 use App\Http\Models\UserTrafficHourly;
@@ -51,7 +52,6 @@ class UserController extends Controller
 
         $view['info'] = $user->toArray();
         $view['notice'] = Article::query()->where('type', 2)->where('is_del', 0)->orderBy('id', 'desc')->first();
-        $view['articleList'] = Article::query()->where('type', 1)->where('is_del', 0)->orderBy('sort', 'desc')->orderBy('id', 'desc')->limit(10)->get();
         $view['wechat_qrcode'] = $this->systemConfig['wechat_qrcode'];
         $view['alipay_qrcode'] = $this->systemConfig['alipay_qrcode'];
         $view['login_add_score'] = $this->systemConfig['login_add_score'];
@@ -82,6 +82,9 @@ class UserController extends Controller
 
         $view['subscribe_status'] = !$subscribe ? 1 : $subscribe->status;
         $view['link'] = $this->systemConfig['subscribe_domain'] ? $this->systemConfig['subscribe_domain'] . '/s/' . $code : $this->systemConfig['website_url'] . '/s/' . $code;
+
+        // 近期登录日志
+        $view['userLoginLog'] = UserLoginLog::query()->where('user_id', $user['id'])->orderBy('id', 'desc')->limit(10)->get();
 
         // 节点列表
         $userLabelIds = UserLabel::query()->where('user_id', $user['id'])->pluck('label_id');
@@ -399,7 +402,12 @@ class UserController extends Controller
         $view['website_analytics'] = $this->systemConfig['website_analytics'];
         $view['website_customer_service'] = $this->systemConfig['website_customer_service'];
 
-        $view['order'] = Order::query()->with(['goods', 'coupon', 'payment'])->where('order_sn', $sn)->firstOrFail();
+        $order = Order::query()->with(['goods', 'coupon', 'payment'])->where('order_sn', $sn)->firstOrFail();
+
+        // 处理商品流量信息
+        $order->goods->traffic = flowAutoShow($order->goods->traffic * 1048576);
+
+        $view['order'] = $order;
 
         return Response::view('user/orderDetail', $view);
     }
@@ -980,9 +988,6 @@ class UserController extends Controller
                         Order::query()->where('oid', $vo->oid)->update(['is_expire' => 1]);
                         User::query()->where('id', $user->id)->decrement('transfer_enable', $vo->goods->traffic * 1048576);
                     }
-
-                    // 重置已用流量
-                    User::query()->where('id', $user->id)->update(['u' => 0, 'd' => 0]);
                 }
 
                 // 把商品的流量加到账号上
@@ -995,8 +1000,12 @@ class UserController extends Controller
                     $expireTime = date('Y-m-d', strtotime("+" . $goods->days . " days", strtotime($user->expire_time)));
                 }
 
-                // 更新账号过期时间
-                User::query()->where('id', $user->id)->update(['expire_time' => $expireTime, 'traffic_reset_day' => 1, 'enable' => 1]);
+                // 更新账号过期时间：套餐改流量重置日，重置已用流量
+                if ($goods->type == 2) {
+                    User::query()->where('id', $order->user_id)->update(['u' => 0, 'd' => 0, 'traffic_reset_day' => 1, 'expire_time' => $expireTime, 'enable' => 1]);
+                } else {
+                    User::query()->where('id', $order->user_id)->update(['expire_time' => $expireTime, 'enable' => 1]);
+                }
 
                 // 写入用户标签
                 if ($goods->label) {
@@ -1127,7 +1136,8 @@ class UserController extends Controller
 
         // 校验可以提现金额是否超过系统设置的阀值
         $ref_amount = ReferralLog::query()->where('ref_user_id', $user['id'])->where('status', 0)->sum('ref_amount');
-        if ($ref_amount / 100 < $this->systemConfig['referral_money']) {
+        $ref_amount = $ref_amount / 100;
+        if ($ref_amount < $this->systemConfig['referral_money']) {
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '申请失败：满' . $this->systemConfig['referral_money'] . '元才可以提现，继续努力吧']);
         }
 
@@ -1149,6 +1159,17 @@ class UserController extends Controller
         $obj->save();
 
         return Response::json(['status' => 'success', 'data' => '', 'message' => '申请成功，请等待管理员审核']);
+    }
+
+    // 帮助中心
+    public function help(Request $request)
+    {
+        $view['website_logo'] = $this->systemConfig['website_logo'];
+        $view['website_analytics'] = $this->systemConfig['website_analytics'];
+        $view['website_customer_service'] = $this->systemConfig['website_customer_service'];
+        $view['articleList'] = Article::query()->where('type', 1)->where('is_del', 0)->orderBy('sort', 'desc')->orderBy('id', 'desc')->limit(10)->paginate(15);
+
+        return Response::view('user/help', $view);
     }
 
     // 更换订阅地址

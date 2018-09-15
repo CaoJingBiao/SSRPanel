@@ -49,12 +49,12 @@ class AdminController extends Controller
         $view['activeUserCount'] = User::query()->where('t', '>=', $past)->count(); // 活跃用户数
         $view['unActiveUserCount'] = User::query()->where('t', '<=', $past)->where('enable', 1)->where('t', '>', 0)->count(); // 不活跃用户数
         $view['onlineUserCount'] = User::query()->where('t', '>=', time() - 600)->count(); // 10分钟内在线用户数
-        $view['expireWarningUserCount'] = User::query()->where('expire_time', '<=', date('Y-m-d', strtotime("+" . $this->systemConfig['expire_days'] . " days")))->whereIn('status', [0, 1])->where('enable', 1)->count(); // 临近过期用户数
+        $view['expireWarningUserCount'] = User::query()->where('expire_time', '<', date('Y-m-d', strtotime("+" . $this->systemConfig['expire_days'] . " days")))->whereIn('status', [0, 1])->where('enable', 1)->count(); // 临近过期用户数
         $view['largeTrafficUserCount'] = User::query()->whereRaw('(u + d) >= 107374182400')->whereIn('status', [0, 1])->count(); // 流量超过100G的用户
 
-        // 24小时内流量异常用户
+        // 1小时内流量异常用户
         $tempUsers = [];
-        $userTotalTrafficList = UserTrafficHourly::query()->where('node_id', 0)->where('total', '>', 104857600)->where('created_at', '>=', date('Y-m-d H:i:s', time() - 24 * 60 * 60))->groupBy('user_id')->selectRaw("user_id, sum(total) as totalTraffic")->get(); // 只统计100M以上的记录，加快速度
+        $userTotalTrafficList = UserTrafficHourly::query()->where('node_id', 0)->where('total', '>', 104857600)->where('created_at', '>=', date('Y-m-d H:i:s', time() - 3900))->groupBy('user_id')->selectRaw("user_id, sum(total) as totalTraffic")->get(); // 只统计100M以上的记录，加快速度
         if (!$userTotalTrafficList->isEmpty()) {
             foreach ($userTotalTrafficList as $vo) {
                 if ($vo->totalTraffic > ($this->systemConfig['traffic_ban_value'] * 1024 * 1024 * 1024)) {
@@ -145,10 +145,10 @@ class AdminController extends Controller
             $query->where('t', '>', 0)->where('t', '<=', strtotime(date('Y-m-d', strtotime("-" . $this->systemConfig['expire_days'] . " days"))))->where('enable', 1);
         }
 
-        // 24小时内流量异常用户
+        // 1小时内流量异常用户
         if ($flowAbnormal) {
             $tempUsers = [];
-            $userTotalTrafficList = UserTrafficHourly::query()->where('node_id', 0)->where('total', '>', 104857600)->where('created_at', '>=', date('Y-m-d H:i:s', time() - 24 * 60 * 60))->groupBy('user_id')->selectRaw("user_id, sum(total) as totalTraffic")->get(); // 只统计100M以上的记录，加快速度
+            $userTotalTrafficList = UserTrafficHourly::query()->where('node_id', 0)->where('total', '>', 104857600)->where('created_at', '>=', date('Y-m-d H:i:s', time() - 3900))->groupBy('user_id')->selectRaw("user_id, sum(total) as totalTraffic")->get(); // 只统计100M以上的记录，加快速度
             if (!$userTotalTrafficList->isEmpty()) {
                 foreach ($userTotalTrafficList as $vo) {
                     if ($vo->totalTraffic > ($this->systemConfig['traffic_ban_value'] * 1024 * 1024 * 1024)) {
@@ -166,7 +166,7 @@ class AdminController extends Controller
             $user->expireWarning = $user->expire_time <= date('Y-m-d', strtotime("+ 30 days")) ? 1 : 0; // 临近过期提醒
 
             // 流量异常警告
-            $time = date('Y-m-d H:i:s', time() - 24 * 60 * 60);
+            $time = date('Y-m-d H:i:s', time() - 3900);
             $totalTraffic = UserTrafficHourly::query()->where('user_id', $user->id)->where('node_id', 0)->where('created_at', '>=', $time)->sum('total');
             $user->trafficWarning = $totalTraffic > ($this->systemConfig['traffic_ban_value'] * 1024 * 1024 * 1024) ? 1 : 0;
         }
@@ -209,8 +209,11 @@ class AdminController extends Controller
             $user->expire_time = empty($request->get('expire_time')) ? date('Y-m-d', strtotime("+365 days")) : $request->get('expire_time');
             $user->remark = clean($request->get('remark', ''));
             $user->level = $request->get('level', 1);
-            $user->is_admin = $request->get('is_admin', 0);
-            $user->reg_ip = $request->getClientIp();
+            $user->is_admin = 0;
+            $user->reg_ip = getClientIp();
+            $user->referral_uid = 1;
+            $user->traffic_reset_day = 0;
+            $user->status = 1;
             $user->save();
 
             if ($user->id) {
@@ -265,8 +268,10 @@ class AdminController extends Controller
                 $user->transfer_enable = toGB(1000);
                 $user->enable_time = date('Y-m-d');
                 $user->expire_time = date('Y-m-d', strtotime("+365 days"));
-                $user->reg_ip = $request->getClientIp();
-                $user->status = 0;
+                $user->reg_ip = getClientIp();
+                $user->referral_uid = 1;
+                $user->traffic_reset_day = 0;
+                $user->status = 1;
                 $user->save();
 
                 // 初始化默认标签
@@ -299,10 +304,10 @@ class AdminController extends Controller
         if ($request->method() == 'POST') {
             $username = trim($request->get('username'));
             $password = $request->get('password');
-            $port = $request->get('port');
+            $port = intval($request->get('port'));
             $passwd = $request->get('passwd');
             $transfer_enable = $request->get('transfer_enable');
-            $enable = $request->get('enable');
+            $enable = intval($request->get('enable'));
             $method = $request->get('method');
             $protocol = $request->get('protocol');
             $protocol_param = $request->get('protocol_param', '');
@@ -365,7 +370,9 @@ class AdminController extends Controller
                 ];
 
                 if (!empty($password)) {
-                    $data['password'] = md5($password);
+                    if (!(env('APP_DEMO') && $id == 1)) { // 演示环境禁止修改管理员密码
+                        $data['password'] = md5($password);
+                    }
                 }
 
                 User::query()->where('id', $id)->update($data);
@@ -393,7 +400,7 @@ class AdminController extends Controller
                 return Response::json(['status' => 'fail', 'data' => '', 'message' => '编辑失败']);
             }
         } else {
-            $user = User::query()->with(['label'])->where('id', $id)->first();
+            $user = User::query()->with(['label', 'referral'])->where('id', $id)->first();
             if ($user) {
                 $user->transfer_enable = flowToGB($user->transfer_enable);
 
@@ -1205,7 +1212,7 @@ class AdminController extends Controller
                     $obj->expire_time = '2099-01-01';
                     $obj->remark = '';
                     $obj->is_admin = 0;
-                    $obj->reg_ip = $request->getClientIp();
+                    $obj->reg_ip = getClientIp();
                     $obj->created_at = date('Y-m-d H:i:s');
                     $obj->updated_at = date('Y-m-d H:i:s');
                     $obj->save();
@@ -1544,6 +1551,14 @@ EOF;
             if ($request->hasFile('website_home_logo')) {
                 $file = $request->file('website_home_logo');
                 $fileType = $file->getClientOriginalExtension();
+
+                // 验证文件合法性
+                if (!in_array($fileType, ['jpg', 'png', 'jpeg', 'bmp'])) {
+                    Session::flash('errorMsg', 'LOGO不合法');
+
+                    return Redirect::back();
+                }
+
                 $logoName = date('YmdHis') . mt_rand(1000, 2000) . '.' . $fileType;
                 $move = $file->move(base_path() . '/public/upload/image/', $logoName);
                 $websiteHomeLogo = $move ? '/upload/image/' . $logoName : '';
@@ -1555,6 +1570,14 @@ EOF;
             if ($request->hasFile('website_logo')) {
                 $file = $request->file('website_logo');
                 $fileType = $file->getClientOriginalExtension();
+
+                // 验证文件合法性
+                if (!in_array($fileType, ['jpg', 'png', 'jpeg', 'bmp'])) {
+                    Session::flash('errorMsg', 'LOGO不合法');
+
+                    return Redirect::back();
+                }
+
                 $logoName = date('YmdHis') . mt_rand(1000, 2000) . '.' . $fileType;
                 $move = $file->move(base_path() . '/public/upload/image/', $logoName);
                 $websiteLogo = $move ? '/upload/image/' . $logoName : '';
@@ -1859,10 +1882,10 @@ EOF;
             }
         }
 
-        // 演示环境禁止修改有赞支付
+        // 演示环境禁止修改特定配置项
         if (env('APP_DEMO')) {
-            if (in_array($name, ['youzan_client_id', 'youzan_client_secret', 'kdt_id'])) {
-                return Response::json(['status' => 'fail', 'data' => '', 'message' => '演示环境禁止修改有赞支付配置']);
+            if (in_array($name, ['website_url', 'push_bear_send_key', 'push_bear_qrcode', 'youzan_client_id', 'youzan_client_secret', 'kdt_id'])) {
+                return Response::json(['status' => 'fail', 'data' => '', 'message' => '演示环境禁止修改该配置']);
             }
         }
 
