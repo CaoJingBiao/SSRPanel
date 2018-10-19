@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Components\Helpers;
 use App\Components\Yzy;
 use App\Http\Models\Coupon;
 use App\Http\Models\Goods;
@@ -17,6 +18,13 @@ use DB;
 
 class PaymentController extends Controller
 {
+    protected static $systemConfig;
+
+    function __construct()
+    {
+        self::$systemConfig = Helpers::systemConfig();
+    }
+
     // 创建支付单
     public function create(Request $request)
     {
@@ -31,7 +39,7 @@ class PaymentController extends Controller
         }
 
         // 判断是否开启有赞云支付
-        if (!$this->systemConfig['is_youzan']) {
+        if (!self::$systemConfig['is_youzan']) {
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '创建支付单失败：系统并未开启在线支付功能']);
         }
 
@@ -42,8 +50,8 @@ class PaymentController extends Controller
         }
 
         // 限购控制
-        $strategy = $this->systemConfig['goods_purchase_limit_strategy'];
-        if ($strategy == 'all' || ($strategy == 'free' && $goods->price == 0)) {
+        $strategy = self::$systemConfig['goods_purchase_limit_strategy'];
+        if ($strategy == 'all' || ($strategy == 'package' && $goods->type == 2) || ($strategy == 'free' && $goods->price == 0) || ($strategy == 'package&free' && ($goods->type == 2 || $goods->price == 0))) {
             $noneExpireOrderExist = Order::query()->where('status', '>=', 0)->where('is_expire', 0)->where('user_id', $user['id'])->where('goods_id', $goods_id)->exists();
             if ($noneExpireOrderExist) {
                 return Response::json(['status' => 'fail', 'data' => '', 'message' => '创建支付单失败：商品不可重复购买']);
@@ -69,6 +77,25 @@ class PaymentController extends Controller
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '创建支付单失败：订单总价异常']);
         } elseif ($amount == 0) {
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '创建支付单失败：订单总价为0，无需使用在线支付']);
+        }
+
+        // 验证账号是否存在有效期更长的套餐
+        if ($goods->type == 2) {
+            $existOrderList = Order::query()
+                ->with(['goods'])
+                ->whereHas('goods', function ($q) {
+                    $q->where('type', 2);
+                })
+                ->where('user_id', $user['id'])
+                ->where('is_expire', 0)
+                ->where('status', 2)
+                ->get();
+
+            foreach ($existOrderList as $vo) {
+                if ($vo->goods->days > $goods->days) {
+                    return Response::json(['status' => 'fail', 'data' => '', 'message' => '支付失败：您已存在有效期更长的套餐，只能购买流量包']);
+                }
+            }
         }
 
         DB::beginTransaction();
@@ -120,18 +147,18 @@ class PaymentController extends Controller
                     $coupon->save();
                 }
 
-                $this->addCouponLog($coupon->id, $goods_id, $order->oid, '在线支付使用');
+                Helpers::addCouponLog($coupon->id, $goods_id, $order->oid, '在线支付使用');
             }
 
             DB::commit();
 
-            return Response::json(['status' => 'success', 'data' => $sn, 'message' => '创建支付单成功，正在转到付款页面，请稍后']);
+            return Response::json(['status' => 'success', 'data' => $sn, 'message' => '创建订单成功，正在转到付款页面，请稍后']);
         } catch (\Exception $e) {
             DB::rollBack();
 
             Log::error('创建支付订单失败：' . $e->getMessage());
 
-            return Response::json(['status' => 'fail', 'data' => '', 'message' => '创建支付单失败：' . $e->getMessage()]);
+            return Response::json(['status' => 'fail', 'data' => '', 'message' => '创建订单失败：' . $e->getMessage()]);
         }
     }
 
@@ -157,11 +184,11 @@ class PaymentController extends Controller
         }
 
         $view['payment'] = $payment;
-        $view['website_logo'] = $this->systemConfig['website_logo'];
-        $view['website_analytics'] = $this->systemConfig['website_analytics'];
-        $view['website_customer_service'] = $this->systemConfig['website_customer_service'];
+        $view['website_logo'] = self::$systemConfig['website_logo'];
+        $view['website_analytics'] = self::$systemConfig['website_analytics'];
+        $view['website_customer_service'] = self::$systemConfig['website_customer_service'];
 
-        return Response::view('payment/detail', $view);
+        return Response::view('payment.detail', $view);
     }
 
     // 获取订单支付状态
@@ -176,13 +203,11 @@ class PaymentController extends Controller
         $user = Session::get('user');
         $payment = Payment::query()->where('sn', $sn)->where('user_id', $user['id'])->first();
         if (!$payment) {
-            return Response::json(['status' => 'fail', 'data' => '', 'message' => '支付失败']);
-        }
-
-        if ($payment->status) {
+            return Response::json(['status' => 'error', 'data' => '', 'message' => '支付失败']);
+        } elseif ($payment->status > 0) {
             return Response::json(['status' => 'success', 'data' => '', 'message' => '支付成功']);
         } elseif ($payment->status < 0) {
-            return Response::json(['status' => 'fail', 'data' => '', 'message' => '支付失败']);
+            return Response::json(['status' => 'error', 'data' => '', 'message' => '订单超时未支付，已自动关闭']);
         } else {
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '等待支付']);
         }
@@ -201,6 +226,6 @@ class PaymentController extends Controller
 
         $view['list'] = $query->orderBy('id', 'desc')->paginate(10);
 
-        return Response::view('payment/callbackList', $view);
+        return Response::view('payment.callbackList', $view);
     }
 }

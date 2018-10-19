@@ -43,6 +43,7 @@ CREATE TABLE `ss_node` (
   `monitor_url` VARCHAR(255) NULL DEFAULT NULL COMMENT '监控地址',
   `is_subscribe` TINYINT(4) NULL DEFAULT '1' COMMENT '是否允许用户订阅该节点：0-否、1-是',
   `ssh_port` SMALLINT(6) UNSIGNED NOT NULL DEFAULT '22' COMMENT 'SSH端口',
+  `is_tcp_check` TINYINT(4) NOT NULL DEFAULT '1' COMMENT '是否开启检测: 0-不开启、1-开启',
   `icmp` TINYINT(4) NOT NULL DEFAULT '1' COMMENT 'ICMP检测：-2-内外都不通、-1-内不通外通、0-外不通内通、1-内外都通',
   `tcp` TINYINT(4) NOT NULL DEFAULT '1' COMMENT 'TCP检测：-2-内外都不通、-1-内不通外通、0-外不通内通、1-内外都通',
   `udp` TINYINT(4) NOT NULL DEFAULT '1' COMMENT 'ICMP检测：-2-内外都不通、-1-内不通外通、0-外不通内通、1-内外都通',
@@ -283,7 +284,7 @@ INSERT INTO `config` VALUES ('1', 'is_rand_port', 0);
 INSERT INTO `config` VALUES ('2', 'is_user_rand_port', 0);
 INSERT INTO `config` VALUES ('3', 'invite_num', 3);
 INSERT INTO `config` VALUES ('4', 'is_register', 1);
-INSERT INTO `config` VALUES ('5', 'is_invite_register', 1);
+INSERT INTO `config` VALUES ('5', 'is_invite_register', 2);
 INSERT INTO `config` VALUES ('6', 'website_name', 'SSRPanel');
 INSERT INTO `config` VALUES ('7', 'is_reset_password', 1);
 INSERT INTO `config` VALUES ('8', 'reset_password_times', 3);
@@ -347,6 +348,8 @@ INSERT INTO `config` VALUES ('65', 'website_logo', '');
 INSERT INTO `config` VALUES ('66', 'website_home_logo', '');
 INSERT INTO `config` VALUES ('67', 'is_tcp_check', 0);
 INSERT INTO `config` VALUES ('68', 'tcp_check_warning_times', 3);
+INSERT INTO `config` VALUES ('69', 'is_forbid_china', 0);
+INSERT INTO `config` VALUES ('70', 'is_forbid_oversea', 0);
 
 
 -- ----------------------------
@@ -453,11 +456,13 @@ CREATE TABLE `goods` (
   `logo` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '商品图片地址',
   `traffic` bigint(20) NOT NULL DEFAULT '0' COMMENT '商品内含多少流量，单位Mib',
   `score` int(11) NOT NULL DEFAULT '0' COMMENT '商品价值多少积分',
-  `type` tinyint(4) NOT NULL DEFAULT '1' COMMENT '商品类型：1-流量包、2-套餐',
+  `type` tinyint(4) NOT NULL DEFAULT '1' COMMENT '商品类型：1-流量包、2-套餐、3-余额充值',
   `price` int(11) NOT NULL DEFAULT '0' COMMENT '商品售价，单位分',
   `desc` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '商品描述',
   `days` int(11) NOT NULL DEFAULT '30' COMMENT '有效期',
+  `color` VARCHAR(50) NOT NULL DEFAULT 'green' COMMENT '商品颜色',
   `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序',
+  `is_hot` TINYINT(4) NOT NULL DEFAULT '0' COMMENT '是否热销：0-否、1-是',
   `is_del` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否已删除：0-否、1-是',
   `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '状态：0-下架、1-上架',
   `created_at` datetime DEFAULT NULL COMMENT '创建时间',
@@ -512,6 +517,7 @@ CREATE TABLE `order` (
   `user_id` int(11) NOT NULL DEFAULT '0' COMMENT '操作人',
   `goods_id` int(11) NOT NULL DEFAULT '0' COMMENT '商品ID',
   `coupon_id` int(11) NOT NULL DEFAULT '0' COMMENT '优惠券ID',
+  `email` varchar(255) DEFAULT NULL COMMENT '邮箱',
   `origin_amount` int(11) NOT NULL DEFAULT '0' COMMENT '订单原始总价，单位分',
   `amount` int(11) NOT NULL DEFAULT '0' COMMENT '订单总价，单位分',
   `expire_at` datetime DEFAULT NULL COMMENT '过期时间',
@@ -601,6 +607,22 @@ CREATE TABLE `user_balance_log` (
   `created_at` datetime DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户余额变动日志';
+
+
+-- ----------------------------
+-- Table structure for `user_traffic_modify_log`
+-- ----------------------------
+CREATE TABLE `user_traffic_modify_log` (
+	`id` INT(11) NOT NULL AUTO_INCREMENT,
+	`user_id` INT(11) NOT NULL DEFAULT '0' COMMENT '用户ID',
+	`order_id` INT(11) NOT NULL DEFAULT '0' COMMENT '发生的订单ID',
+	`before` INT(11) NOT NULL DEFAULT '0',
+	`after` INT(11) NOT NULL DEFAULT '0',
+	`desc` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '描述',
+	`created_at` DATETIME NOT NULL,
+	`updated_at` DATETIME NOT NULL,
+	PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户流量变动日志';
 
 
 -- ----------------------------

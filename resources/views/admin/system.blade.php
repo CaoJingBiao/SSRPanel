@@ -88,19 +88,23 @@
                                                             </div>
                                                         </div>
                                                         <div class="col-md-6">
-                                                            <label for="is_active_register" class="col-md-3 control-label">激活账号</label>
+                                                            <label for="is_invite_register" class="col-md-3 control-label">邀请注册</label>
                                                             <div class="col-md-9">
-                                                                <input type="checkbox" class="make-switch" @if($is_active_register) checked @endif id="is_active_register" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
-                                                                <span class="help-block"> 启用后用户需要通过邮件来激活账号 </span>
+                                                                <select id="is_invite_register" class="form-control select2" name="is_invite_register">
+                                                                    <option value="0" @if($is_invite_register == '0') selected @endif>关闭</option>
+                                                                    <option value="1" @if($is_invite_register == '1') selected @endif>可选</option>
+                                                                    <option value="2" @if($is_invite_register == '2') selected @endif>必须</option>
+                                                                </select>
+                                                                <span class="help-block"> 启用后必须使用邀请码进行注册 </span>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div class="form-group">
                                                         <div class="col-md-6">
-                                                            <label for="is_invite_register" class="col-md-3 control-label">邀请注册</label>
+                                                            <label for="is_active_register" class="col-md-3 control-label">激活账号</label>
                                                             <div class="col-md-9">
-                                                                <input type="checkbox" class="make-switch" @if($is_invite_register) checked @endif id="is_invite_register" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
-                                                                <span class="help-block"> 启用后必须使用邀请码进行注册 </span>
+                                                                <input type="checkbox" class="make-switch" @if($is_active_register) checked @endif id="is_active_register" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
+                                                                <span class="help-block"> 启用后用户需要通过邮件来激活账号 </span>
                                                             </div>
                                                         </div>
                                                         <div class="col-md-6">
@@ -124,6 +128,22 @@
                                                             <div class="col-md-9">
                                                                 <input type="checkbox" class="make-switch" @if($is_free_code) checked @endif id="is_free_code" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
                                                                 <span class="help-block"> 关闭后免费邀请码不可见 </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <div class="col-md-6">
+                                                            <label for="is_forbid_china" class="col-md-3 control-label">阻止大陆访问</label>
+                                                            <div class="col-md-9">
+                                                                <input type="checkbox" class="make-switch" @if($is_forbid_china) checked @endif id="is_forbid_china" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
+                                                                <span class="help-block"> 开启后大陆IP禁止访问 </span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label for="is_forbid_oversea" class="col-md-3 control-label">阻止海外访问</label>
+                                                            <div class="col-md-9">
+                                                                <input type="checkbox" class="make-switch" @if($is_forbid_oversea) checked @endif id="is_forbid_oversea" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
+                                                                <span class="help-block"> 开启后海外IP(含港澳台)禁止访问 </span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -182,7 +202,7 @@
                                                                         <button class="btn btn-success" type="button" onclick="setDefaultDays()">修改</button>
                                                                     </span>
                                                                 </div>
-                                                                <span class="help-block"> 用户注册时默认SSR(R)有效天数 </span>
+                                                                <span class="help-block"> 用户注册时默认账户有效期，为0即当天到期 </span>
                                                             </div>
                                                         </div>
                                                         <div class="col-md-6">
@@ -302,11 +322,21 @@
                                                                             selected
                                                                             @endif
                                                                     >不限制</option>
+                                                                    <option value="package"
+                                                                            @if ($goods_purchase_limit_strategy == 'package')
+                                                                            selected
+                                                                            @endif
+                                                                    >仅限套餐</option>
                                                                     <option value="free"
                                                                             @if ($goods_purchase_limit_strategy == 'free')
                                                                             selected
                                                                             @endif
                                                                     >仅限免费商品</option>
+                                                                    <option value="package&free"
+                                                                            @if ($goods_purchase_limit_strategy == 'package&free')
+                                                                            selected
+                                                                            @endif
+                                                                    >限套餐和免费商品</option>
                                                                     <option value="all"
                                                                             @if ($goods_purchase_limit_strategy == 'all')
                                                                             selected
@@ -559,7 +589,7 @@
                                                                         <button class="btn btn-success" type="button" onclick="setPushBearQrCode()">修改</button>
                                                                     </span>
                                                                 </div>
-                                                                <span class="help-block"> 创建消息通道后，在二维码上点击右键“复制图片地址”，展示于个人中心 </span>
+                                                                <span class="help-block"> 创建消息通道后，在二维码上点击右键“复制图片地址”并粘贴至此处 </span>
                                                             </div>
                                                         </div>
                                                         <div class="col-md-6"></div>
@@ -634,7 +664,7 @@
                                                             <label for="is_traffic_ban" class="col-md-3 control-label">异常自动封号</label>
                                                             <div class="col-md-9">
                                                                 <input type="checkbox" class="make-switch" @if($is_traffic_ban) checked @endif id="is_traffic_ban" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
-                                                                <span class="help-block"> 1小时内流量超过异常阈值则自动封号（仅禁用SSR(R)） </span>
+                                                                <span class="help-block"> 1小时内流量超过异常阈值则自动封号（仅禁用代理） </span>
                                                             </div>
                                                         </div>
                                                         <div class="col-md-6">
@@ -669,7 +699,7 @@
                                                             <label for="auto_release_port" class="col-md-3 control-label">端口自动释放</label>
                                                             <div class="col-md-9">
                                                                 <input type="checkbox" class="make-switch" @if($auto_release_port) checked @endif id="auto_release_port" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
-                                                                <span class="help-block"> 被封禁的用户端口自动释放 </span>
+                                                                <span class="help-block"> 被封禁和过期一个月的用户端口自动释放 </span>
                                                             </div>
                                                         </div>
                                                         <div class="col-md-6">
@@ -850,13 +880,43 @@
                 });
             });
         });
-	
+
         // 启用、禁用随机端口
         $('#is_rand_port').on({
             'switchChange.bootstrapSwitch': function(event, state) {
                 var is_rand_port = state ? 1 : 0;
 
                 $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_rand_port', value:is_rand_port}, function (ret) {
+                    layer.msg(ret.message, {time:1000}, function() {
+                        if (ret.status == 'fail') {
+                            window.location.reload();
+                        }
+                    });
+                });
+            }
+        });
+
+        // 启用、禁用屏蔽大陆访问
+        $('#is_forbid_china').on({
+            'switchChange.bootstrapSwitch': function(event, state) {
+                var is_forbid_china = state ? 1 : 0;
+
+                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_forbid_china', value:is_forbid_china}, function (ret) {
+                    layer.msg(ret.message, {time:1000}, function() {
+                        if (ret.status == 'fail') {
+                            window.location.reload();
+                        }
+                    });
+                });
+            }
+        });
+
+        // 启用、禁用屏蔽海外访问
+        $('#is_forbid_oversea').on({
+            'switchChange.bootstrapSwitch': function(event, state) {
+                var is_forbid_oversea = state ? 1 : 0;
+
+                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_forbid_oversea', value:is_forbid_oversea}, function (ret) {
                     layer.msg(ret.message, {time:1000}, function() {
                         if (ret.status == 'fail') {
                             window.location.reload();
@@ -926,19 +986,17 @@
             }
         });
 
-        // 启用、禁用邀请注册
-        $('#is_invite_register').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
-                var is_invite_register = state ? 1 : 0;
+        // 启用、可选、禁用邀请注册
+        $('#is_invite_register').change(function() {
+            var is_invite_register = $(this).val();
 
                 $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_invite_register', value:is_invite_register}, function (ret) {
                     layer.msg(ret.message, {time:1000}, function() {
                         if (ret.status == 'fail') {
                             window.location.reload();
-                        }
-                    });
+                    }
                 });
-            }
+            });
         });
 
         // 启用、禁用用户重置密码
@@ -1195,7 +1253,7 @@
                 });
             }
         });
-	
+
         // 过期封禁是否禁止账号
         $('#is_ban_status').on({
             'switchChange.bootstrapSwitch': function(event, state) {
@@ -1501,7 +1559,7 @@
                         window.location.reload();
                     }
                 });
-            }); 
+            });
         });
 
         // 设置注册时默认有效期

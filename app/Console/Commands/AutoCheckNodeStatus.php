@@ -2,10 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Components\Helpers;
 use Illuminate\Console\Command;
 use App\Components\ServerChan;
-use App\Http\Models\Config;
-use App\Http\Models\EmailLog;
 use App\Http\Models\SsNode;
 use App\Http\Models\SsNodeInfo;
 use App\Mail\nodeCrashWarning;
@@ -17,12 +16,12 @@ class AutoCheckNodeStatus extends Command
 {
     protected $signature = 'autoCheckNodeStatus';
     protected $description = '自动检测节点状态';
-    protected static $config;
+    protected static $systemConfig;
 
     public function __construct()
     {
         parent::__construct();
-        self::$config = $this->systemConfig();
+        self::$systemConfig = Helpers::systemConfig();
     }
 
     public function handle()
@@ -30,8 +29,12 @@ class AutoCheckNodeStatus extends Command
         $jobStartTime = microtime(true);
 
         // 监测节点状态
-        if (self::$config['is_tcp_check']) {
-            $this->checkNodes();
+        if (self::$systemConfig['is_tcp_check']) {
+            if (!Cache::has('tcp_check_time')) {
+                $this->checkNodes();
+            } elseif (Cache::get('tcp_check_time') <= time()) {
+                $this->checkNodes();
+            }
         }
 
         $jobEndTime = microtime(true);
@@ -45,7 +48,7 @@ class AutoCheckNodeStatus extends Command
     {
         $title = "节点异常警告";
 
-        $nodeList = SsNode::query()->where('status', 1)->get();
+        $nodeList = SsNode::query()->where('status', 1)->where('is_tcp_check', 1)->get();
         foreach ($nodeList as $node) {
             $tcpCheck = $this->tcpCheck($node->ip);
             if (false !== $tcpCheck) {
@@ -64,23 +67,23 @@ class AutoCheckNodeStatus extends Command
                         $text = '正常';
                 }
 
-                // 已通知次数
-                $cacheKey = 'tcp_check_warning_times_' . $node->id;
-                if (Cache::has($cacheKey)) {
-                    $times = Cache::get($cacheKey);
-                } else {
-                    Cache::put($cacheKey, 1, 725); // 因为每小时检测一次，最多设置提醒12次，12*60=720分钟缓存时效，多5分钟防止异常
-                    $times = 1;
-                }
-
                 // 异常才发通知消息
-                if ($tcpCheck > 0) {
-                    if (self::$config['tcp_check_warning_times'] > 0) {
-                        if ($times < self::$config['tcp_check_warning_times']) {
+                if ($tcpCheck) {
+                    if (self::$systemConfig['tcp_check_warning_times']) {
+                        // 已通知次数
+                        $cacheKey = 'tcp_check_warning_times_' . $node->id;
+                        if (Cache::has($cacheKey)) {
+                            $times = Cache::get($cacheKey);
+                        } else {
+                            Cache::put($cacheKey, 1, 725); // 最多设置提醒12次，12*60=720分钟缓存时效，多5分钟防止异常
+                            $times = 1;
+                        }
+
+                        if ($times < self::$systemConfig['tcp_check_warning_times']) {
                             Cache::increment('tcp_check_warning_times_' . $node->id);
 
                             $this->notifyMaster($title, "节点**{$node->name}【{$node->ip}】**：**" . $text . "**", $node->name, $node->server);
-                        } elseif ($times >= self::$config['tcp_check_warning_times']) {
+                        } elseif ($times >= self::$systemConfig['tcp_check_warning_times']) {
                             Cache::forget('tcp_check_warning_times_' . $node->id);
                             SsNode::query()->where('id', $node->id)->update(['status' => 0]);
 
@@ -99,10 +102,11 @@ class AutoCheckNodeStatus extends Command
             if ($tcpCheck !== 1 && !$nodeTTL) {
                 $this->notifyMaster($title, "节点**{$node->name}【{$node->ip}】**异常：**心跳异常**", $node->name, $node->server);
             }
-
-            // 天若有情天亦老，我为长者续一秒
-            sleep(1);
         }
+
+        // 随机生成下次检测时间
+        $nextCheckTime = time() + mt_rand(1800, 3600);
+        Cache::put('tcp_check_time', $nextCheckTime, 60);
     }
 
     /**
@@ -141,6 +145,8 @@ class AutoCheckNodeStatus extends Command
      * @param string $content    消息内容
      * @param string $nodeName   节点名称
      * @param string $nodeServer 节点域名
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     private function notifyMaster($title, $content, $nodeName, $nodeServer)
     {
@@ -158,12 +164,12 @@ class AutoCheckNodeStatus extends Command
      */
     private function notifyMasterByEmail($title, $content, $nodeName, $nodeServer)
     {
-        if (self::$config['is_node_crash_warning'] && self::$config['crash_warning_email']) {
+        if (self::$systemConfig['is_node_crash_warning'] && self::$systemConfig['crash_warning_email']) {
             try {
-                Mail::to(self::$config['crash_warning_email'])->send(new nodeCrashWarning(self::$config['website_name'], $nodeName, $nodeServer));
-                $this->addEmailLog(1, $title, $content);
+                Mail::to(self::$systemConfig['crash_warning_email'])->send(new nodeCrashWarning(self::$systemConfig['website_name'], $nodeName, $nodeServer));
+                Helpers::addEmailLog(1, $title, $content);
             } catch (\Exception $e) {
-                $this->addEmailLog(1, $title, $content, 0, $e->getMessage());
+                Helpers::addEmailLog(1, $title, $content, 0, $e->getMessage());
             }
         }
     }
@@ -173,46 +179,15 @@ class AutoCheckNodeStatus extends Command
      *
      * @param string $title   消息标题
      * @param string $content 消息内容
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     private function notifyMasterByServerchan($title, $content)
     {
-        if (self::$config['is_server_chan'] && self::$config['server_chan_key']) {
+        if (self::$systemConfig['is_server_chan'] && self::$systemConfig['server_chan_key']) {
             $serverChan = new ServerChan();
             $serverChan->send($title, $content);
         }
-    }
-
-    /**
-     * 添加邮件发送日志
-     *
-     * @param int    $userId  接收者用户ID
-     * @param string $title   标题
-     * @param string $content 内容
-     * @param int    $status  投递状态
-     * @param string $error   投递失败时记录的异常信息
-     */
-    private function addEmailLog($userId, $title, $content, $status = 1, $error = '')
-    {
-        $emailLogObj = new EmailLog();
-        $emailLogObj->user_id = $userId;
-        $emailLogObj->title = $title;
-        $emailLogObj->content = $content;
-        $emailLogObj->status = $status;
-        $emailLogObj->error = $error;
-        $emailLogObj->created_at = date('Y-m-d H:i:s');
-        $emailLogObj->save();
-    }
-
-    // 系统配置
-    private function systemConfig()
-    {
-        $config = Config::query()->get();
-        $data = [];
-        foreach ($config as $vo) {
-            $data[$vo->name] = $vo->value;
-        }
-
-        return $data;
     }
 
     /**

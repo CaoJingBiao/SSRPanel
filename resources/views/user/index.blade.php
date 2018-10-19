@@ -36,6 +36,25 @@
         @endif
         <div class="row">
             <div class="col-md-8">
+                @if($notice)
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="portlet light bordered">
+                                <div class="portlet-title tabbable-line">
+                                    <div class="caption">
+                                        <i class="icon-directions font-green hide"></i>
+                                        <span class="caption-subject font-blue bold"> {{trans('home.announcement')}} </span>
+                                    </div>
+                                </div>
+                                <div class="portlet-body">
+                                    <div class="tab-content">
+                                        {!!$notice->content!!}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
                 <div class="row">
                     <div class="col-md-12">
                         <div class="portlet light">
@@ -82,7 +101,7 @@
                                         <div class="tab-content" style="font-size:16px;">
                                             <div class="tab-pane active" id="tools1">
                                                 <ol>
-                                                    <li> <a href="#" target="_blank">点击此处</a>下载客户端并启动 </li>
+                                                    <li> <a href="{{asset('clients/ShadowsocksX-NG.1.8.2.zip')}}" target="_blank">点击此处</a>下载客户端并启动 </li>
                                                     <li> 单击状态栏小飞机，找到服务器->编辑订阅，复制黏贴订阅地址 </li>
                                                     <li> 点击服务器->手动更新订阅，更新您的服务信息 </li>
                                                     <li> 更新成功后，请在服务器菜单处选择线路，并点击打开ShadowsocksR </li>
@@ -91,7 +110,7 @@
                                             </div>
                                             <div class="tab-pane" id="tools2">
                                                 <ol>
-                                                    <li> <a href="#" target="_blank">点击此处</a>下载客户端并启动 </li>
+                                                    <li> <a href="{{asset('clients/Shadowsocks-4.1.2.zip')}}" target="_blank">点击此处</a>下载客户端并启动 </li>
                                                     <li> 单击状态栏小飞机，找到服务器->订阅->订阅设置，复制黏贴订阅地址 </li>
                                                     <li> 点击状态栏小飞机，找到模式，选中PAC </li>
                                                     <li> 点击状态栏小飞机，找到PAC，选中更新PAC为GFWList </li>
@@ -99,19 +118,22 @@
                                             </div>
                                             <div class="tab-pane" id="tools3">
                                                 <ol>
-                                                    <li> <a href="#" target="_blank">点击此处</a>下载客户端并启动 </li>
+                                                    <li> <a href="{{asset('clients/Shadowsocks-qt5-3.0.1.zip')}}" target="_blank">点击此处</a>下载客户端并启动 </li>
                                                     <li> 单击状态栏小飞机，找到服务器->编辑订阅，复制黏贴订阅地址 </li>
                                                     <li> 更新订阅设置即可 </li>
                                                 </ol>
                                             </div>
                                             <div class="tab-pane" id="tools4">
                                                 <ol>
+                                                    @if(Agent::is('iPhone') || Agent::is('iPad'))
+                                                        <li> <a href="{{$ipa_list}}" target="_blank">点击此处在线安装</a></li>
+                                                    @endif
                                                     <li> 请从站长处获取App Store美区ID及教程 </li>
                                                 </ol>
                                             </div>
                                             <div class="tab-pane" id="tools5">
                                                 <ol>
-                                                    <li> <a href="#" target="_blank">点击此处</a>下载客户端并启动 </li>
+                                                    <li> <a href="{{asset('clients/Shadowsocks-universal-4.6.1.apk')}}" target="_blank">点击此处</a>下载客户端并启动 </li>
                                                     <li> 单击左上角的shadowsocksR进入配置文件页，点击右下角的“+”号，点击“添加/升级SSR订阅”，填入订阅信息并保存 </li>
                                                     <li> 选中任意一个节点，返回软件首页 </li>
                                                     <li> 在软件首页处找到“路由”选项，并将其改为“绕过局域网及中国大陆地址” </li>
@@ -163,6 +185,9 @@
                                                             </span>
                                                             <ul class="mt-comment-actions" style="display: block;">
                                                                 <li>
+                                                                    <a class="btn btn-sm green btn-outline" data-toggle="modal" href="#txt_{{$node->id}}" > <i class="fa fa-reorder"></i> </a>
+                                                                </li>
+                                                                <li>
                                                                     <a class="btn btn-sm green btn-outline" data-toggle="modal" href="#link_{{$node->id}}"> <i class="fa fa-paper-plane"></i> </a>
                                                                 </li>
                                                                 <li>
@@ -182,11 +207,17 @@
                 </div>
                 @endif
             </div>
-            <div class="col-md-4" style="padding-left: 3px;">
+            <div class="col-md-4" >
                 <ul class="list-group">
+                    @if($info['enable'])
                     <li class="list-group-item">
-                        {{trans('home.account_status')}}：{{$info['enable'] ? trans('home.enabled') : trans('home.disabled') }}
+                            {{trans('home.account_status')}}：{{trans('home.enabled')}}
+                        </li>
+                    @else
+                        <li class="list-group-item list-group-item-danger">
+                            {{trans('home.account_status')}}：{{trans('home.disabled')}}
                     </li>
+                    @endif
                     @if($login_add_score)
                         <li class="list-group-item">
                             {{trans('home.account_score')}}：{{$info['score']}}
@@ -201,9 +232,15 @@
                             <a href="javascript:;" data-toggle="modal" data-target="#charge_modal" style="color:#FFF;">{{trans('home.recharge')}}</a>
                         </span>
                     </li>
+                    @if(date('Y-m-d') > $info['expire_time'])
+                        <li class="list-group-item list-group-item-danger">
+                            {{trans('home.account_expire')}}：{{trans('home.expired')}}
+                        </li>
+                    @else
                     <li class="list-group-item">
-                        {{trans('home.account_expire')}}：{{date('Y-m-d 0:0:0') > $info['expire_time'] ? trans('home.expired') : $info['expire_time']}}
+                            {{trans('home.account_expire')}}：{{$info['expire_time']}}
                     </li>
+                    @endif
                     <li class="list-group-item">
                         {{trans('home.account_last_usage')}}：{{empty($info['t']) ? trans('home.never_used') : date('Y-m-d H:i:s', $info['t'])}}
                     </li>
@@ -256,11 +293,26 @@
                                     <label for="charge_type" class="col-md-4 control-label">{{trans('home.payment_method')}}</label>
                                     <div class="col-md-6">
                                         <select class="form-control" name="charge_type" id="charge_type">
-                                            <option value="1" selected>{{trans('home.coupon')}}</option>
+                                            <option value="1" selected>{{trans('home.coupon_code')}}</option>
+                                            @if(!$goodsList->isEmpty())
+                                                <option value="2">{{trans('home.online_pay')}}</option>
+                                            @endif
                                         </select>
                                     </div>
                                 </div>
-                                <div class="form-group">
+                                @if(!$goodsList->isEmpty())
+                                    <div class="form-group" id="charge_balance" style="display: none;">
+                                        <label for="online_pay" class="col-md-4 control-label">充值金额</label>
+                                        <div class="col-md-6">
+                                            <select class="form-control" name="online_pay" id="online_pay">
+                                                @foreach($goodsList as $key => $goods)
+                                                    <option value="{{$goods->id}}">充值{{$goods->price}}元</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+                                @endif
+                                <div class="form-group" id="charge_coupon_code">
                                     <label for="charge_coupon" class="col-md-4 control-label"> {{trans('home.coupon_code')}} </label>
                                     <div class="col-md-6">
                                         <input type="text" class="form-control" name="charge_coupon" id="charge_coupon" placeholder="{{trans('home.please_input_coupon')}}">
@@ -366,12 +418,29 @@
     <script src="/js/layer/layer.js" type="text/javascript"></script>
 
     <script type="text/javascript">
+        // 切换充值方式
+        $("#charge_type").change(function(){
+            if ($(this).val() == 2) {
+                $("#charge_balance").show();
+                $("#charge_coupon_code").hide();
+            } else {
+                $("#charge_balance").hide();
+                $("#charge_coupon_code").show();
+            }
+        });
+
         // 充值
         function charge() {
-            var _token = '{{csrf_token()}}';
             var charge_type = $("#charge_type").val();
             var charge_coupon = $("#charge_coupon").val();
+            var online_pay = $("#online_pay").val();
 
+            if (charge_type == '2') {
+                $("#charge_msg").show().html("正在跳转支付界面");
+                window.location.href = '/buy/' + online_pay;
+                return false;
+            }
+            
             if (charge_type == '1' && (charge_coupon == '' || charge_coupon == undefined)) {
                 $("#charge_msg").show().html("{{trans('home.coupon_not_empty')}}");
                 $("#charge_coupon").focus();
@@ -381,7 +450,7 @@
             $.ajax({
                 url:'{{url('charge')}}',
                 type:"POST",
-                data:{_token:_token, coupon_sn:charge_coupon},
+                data:{_token:'{{csrf_token()}}', coupon_sn:charge_coupon},
                 beforeSend:function(){
                     $("#charge_msg").show().html("{{trans('home.recharging')}}");
                 },

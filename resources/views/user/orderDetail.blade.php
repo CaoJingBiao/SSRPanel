@@ -32,7 +32,7 @@
                 </div>
                 <div class="col-xs-3">
                     <h2 class="invoice-title">{{trans('home.coupon')}}</h2>
-                    <p class="invoice-desc">{{$order->coupon ? $order->coupon->name : '...'}}</p>
+                    <p class="invoice-desc">{{$order->coupon ? $order->coupon->name : '未使用'}}</p>
                 </div>
                 <div class="col-xs-3">
                     <h2 class="invoice-title"> {{trans('home.service_total_price')}} </h2>
@@ -73,7 +73,7 @@
                         <tr>
                             <td style="padding: 10px;">
                                 <h2>{{$order->goods->name}}</h2>
-                                {{trans('home.service_traffic')}} {{$order->goods->traffic}}
+                                {{trans('home.service_traffic')}} {{$order->goods->traffic_label}}
                                 <br/>
                                 {{trans('home.service_days')}} {{$order->goods->days}} {{trans('home.day')}}
                             </td>

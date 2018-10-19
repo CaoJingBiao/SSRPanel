@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Components\Helpers;
 use App\Http\Models\SsGroup;
 use App\Http\Models\SsNode;
 use App\Http\Models\User;
@@ -20,6 +21,13 @@ use DB;
  */
 class SubscribeController extends Controller
 {
+    protected static $systemConfig;
+
+    function __construct()
+    {
+        self::$systemConfig = Helpers::systemConfig();
+    }
+
     // 获取订阅信息
     public function index(Request $request, $code)
     {
@@ -69,7 +77,7 @@ class SubscribeController extends Controller
         $scheme = '';
         foreach ($nodeList as $key => $node) {
             // 控制显示的节点数
-            if ($this->systemConfig['subscribe_max'] && $key >= $this->systemConfig['subscribe_max']) {
+            if (self::$systemConfig['subscribe_max'] && $key >= self::$systemConfig['subscribe_max']) {
                 break;
             }
 
