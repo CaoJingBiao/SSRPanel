@@ -7,7 +7,7 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>@yield('title')</title>
+    <title>{{\App\Components\Helpers::systemConfig()['website_name']}}</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta content="width=device-width, initial-scale=1" name="viewport" />
     <meta content="" name="description" />
@@ -40,8 +40,8 @@
     <div class="page-header-inner ">
         <!-- BEGIN LOGO -->
         <div class="page-logo">
-            @if($website_logo)
-                <a href="{{url('/')}}"><img src="{{$website_logo}}" alt="logo" class="logo-default" style="width:150px; height:30px;"/> </a>
+            @if(\App\Components\Helpers::systemConfig()['website_logo'])
+                <a href="{{url('/')}}"><img src="{{\App\Components\Helpers::systemConfig()['website_logo']}}" alt="logo" class="logo-default" style="width:150px; height:30px;"/> </a>
             @else
                 <a href="{{url('/')}}"><img src="/assets/images/logo.png" alt="logo" class="logo-default" /> </a>
             @endif
@@ -53,40 +53,36 @@
         <!-- BEGIN RESPONSIVE MENU TOGGLER -->
         <a href="javascript:;" class="menu-toggler responsive-toggler" data-toggle="collapse" data-target=".navbar-collapse"> </a>
         <!-- END RESPONSIVE MENU TOGGLER -->
-        <!-- BEGIN PAGE TOP -->
-        <div class="page-top">
-            <!-- BEGIN TOP NAVIGATION MENU -->
-            <div class="top-menu">
-                <ul class="nav navbar-nav pull-right">
-                    <li class="separator hide"> </li>
-                    <!-- BEGIN USER LOGIN DROPDOWN -->
-                    <!-- DOC: Apply "dropdown-dark" class after below "dropdown-extended" to change the dropdown styte -->
-                    <li class="dropdown dropdown-user dropdown-dark">
-                        <a href="javascript:;" class="dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-close-others="true">
-                            <span class="username username-hide-on-mobile"> {{Session::get('user')['username']}} </span>
-                            <!-- DOC: Do not remove below empty space(&nbsp;) as its purposely used -->
-                            <img alt="" class="img-circle" src="/assets/images/avatar.png" /> </a>
-                        <ul class="dropdown-menu dropdown-menu-default">
-                            @if(Session::get('user')['is_admin'])
-                                <li>
-                                    <a href="{{url('admin')}}"> <i class="icon-settings"></i>{{trans('home.console')}}</a>
-                                </li>
-                            @endif
+        <!-- BEGIN TOP NAVIGATION MENU -->
+        <div class="top-menu" style="float:right">
+            <ul class="nav navbar-nav pull-right">
+                <li class="separator hide"> </li>
+                <!-- BEGIN USER LOGIN DROPDOWN -->
+                <!-- DOC: Apply "dropdown-dark" class after below "dropdown-extended" to change the dropdown styte -->
+                <li class="dropdown dropdown-user dropdown-dark">
+                    <a href="javascript:;" class="dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-close-others="true">
+                        <span class="username username-hide-on-mobile"> {{Auth::user()->username}} </span>
+                        <!-- DOC: Do not remove below empty space(&nbsp;) as its purposely used -->
+                        <img alt="" class="img-circle" src="/assets/images/avatar.png" /> </a>
+                    <ul class="dropdown-menu dropdown-menu-default">
+                        @if(Auth::user()->is_admin)
                             <li>
-                                <a href="{{url('profile')}}"> <i class="icon-user"></i>{{trans('home.profile')}}</a>
+                                <a href="{{url('admin')}}"> <i class="icon-settings"></i>{{trans('home.console')}}</a>
                             </li>
-                            <li class="divider"> </li>
-                            <li>
-                                <a href="{{url('logout')}}"> <i class="icon-key"></i>{{trans('home.logout')}}</a>
-                            </li>
-                        </ul>
-                    </li>
-                    <!-- END USER LOGIN DROPDOWN -->
-                </ul>
-            </div>
-            <!-- END TOP NAVIGATION MENU -->
+                        @endif
+                        <li>
+                            <a href="{{url('profile')}}"> <i class="icon-user"></i>{{trans('home.profile')}}</a>
+                        </li>
+                        <li class="divider"> </li>
+                        <li>
+                            <a href="{{url('logout')}}"> <i class="icon-key"></i>{{trans('home.logout')}}</a>
+                        </li>
+                    </ul>
+                </li>
+                <!-- END USER LOGIN DROPDOWN -->
+            </ul>
         </div>
-        <!-- END PAGE TOP -->
+        <!-- END TOP NAVIGATION MENU -->
     </div>
     <!-- END HEADER INNER -->
 </div>
@@ -174,7 +170,7 @@
     @if(Session::get("admin"))
         <div class="portlet light bordered" style="position:fixed;right:20px;bottom:0px;width:270px;">
             <div class="portlet-body text-right">
-                <h5>当前身份：{{Session::get("user")['username']}}</h5>
+                <h5>当前身份：{{Auth::user()->username}}</h5>
                 <button class="btn btn-sm btn-danger" id="return_to_admin"> 返回管理页面 </button>
             </div>
         </div>
@@ -184,7 +180,7 @@
 <!-- END CONTAINER -->
 <!-- BEGIN FOOTER -->
 <div class="page-footer">
-    <div class="page-footer-inner"> 2017 - 2018 &copy; <a href="https://github.com/ssrpanel/ssrpanel" target="_blank">SSRPanel</a> </div>
+    <div class="page-footer-inner"> Copyright &copy; 2017 - 2019 <a href="https://github.com/ssrpanel/ssrpanel" target="_blank">SSRPanel</a> {{config('version.name')}} </div>
     <div class="scroll-to-top">
         <i class="icon-arrow-up"></i>
     </div>
@@ -202,12 +198,12 @@
 <script src="/assets/global/plugins/jquery-slimscroll/jquery.slimscroll.min.js" type="text/javascript"></script>
 <script src="/assets/global/plugins/jquery.blockui.min.js" type="text/javascript"></script>
 <script src="/assets/global/plugins/bootstrap-switch/js/bootstrap-switch.min.js" type="text/javascript"></script>
+<script src="/js/layer/layer.js" type="text/javascript"></script>
 <!-- END CORE PLUGINS -->
 <!-- BEGIN PAGE LEVEL PLUGINS -->
 @yield('script')
 
 @if(Session::get("admin"))
-    <script src="/js/layer/layer.js" type="text/javascript"></script>
     <script type="text/javascript">
         $("#return_to_admin").click(function () {
             $.ajax({
@@ -250,9 +246,9 @@
 </script>
 
 <!-- 统计 -->
-{!! $website_analytics !!}
+{!! \App\Components\Helpers::systemConfig()['website_analytics'] !!}
 <!-- 客服 -->
-{!! $website_customer_service !!}
+{!! \App\Components\Helpers::systemConfig()['website_customer_service'] !!}
 </body>
 
 </html>

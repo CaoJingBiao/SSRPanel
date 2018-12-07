@@ -25,9 +25,10 @@
 -- ----------------------------
 CREATE TABLE `ss_node` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `type` tinyint(4) NOT NULL DEFAULT '1' COMMENT '服务类型：1-SS、2-V2ray',
   `name` VARCHAR(128) NOT NULL DEFAULT '' COMMENT '名称',
   `group_id` INT(11) NOT NULL DEFAULT '0' COMMENT '所属分组',
-  `country_code` CHAR(5) NULL DEFAULT '' COMMENT '国家代码',
+  `country_code` CHAR(5) NOT NULL DEFAULT 'un' COMMENT '国家代码',
   `server` VARCHAR(128) NULL DEFAULT '' COMMENT '服务器域名地址',
   `ip` CHAR(15) NULL DEFAULT '' COMMENT '服务器IPV4地址',
   `ipv6` CHAR(128) NULL DEFAULT '' COMMENT '服务器IPV6地址',
@@ -57,6 +58,13 @@ CREATE TABLE `ss_node` (
   `single_obfs` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '混淆',
   `sort` INT(11) NOT NULL DEFAULT '0' COMMENT '排序值，值越大越靠前显示',
   `status` TINYINT(4) NOT NULL DEFAULT '1' COMMENT '状态：0-维护、1-正常',
+  `v2_alter_id` INT(11) NOT NULL DEFAULT '16' COMMENT 'V2ray额外ID',
+  `v2_port` INT(11) NOT NULL DEFAULT '0' COMMENT 'V2ray端口',
+  `v2_net` VARCHAR(16) NOT NULL DEFAULT 'tcp' COMMENT 'V2ray传输协议',
+  `v2_type` VARCHAR(32) NOT NULL DEFAULT 'none' COMMENT 'V2ray伪装类型',
+  `v2_host` VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'V2ray伪装的域名',
+  `v2_path` VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'V2ray WS/H2路径',
+  `v2_tls` TINYINT(4) NOT NULL DEFAULT '0' COMMENT 'V2ray底层传输安全 0 未开启 1 开启',
   `created_at` DATETIME NOT NULL,
   `updated_at` DATETIME NOT NULL,
   PRIMARY KEY (`id`),
@@ -115,15 +123,16 @@ CREATE TABLE `user` (
   `password` varchar(64) NOT NULL DEFAULT '' COMMENT '密码',
   `port` int(11) NOT NULL DEFAULT '0' COMMENT 'SS端口',
   `passwd` varchar(16) NOT NULL DEFAULT '' COMMENT 'SS密码',
+  `vmess_id` varchar(64) NOT NULL DEFAULT '' COMMENT 'V2ray用户ID',
   `transfer_enable` bigint(20) NOT NULL DEFAULT '1073741824000' COMMENT '可用流量，单位字节，默认1TiB',
   `u` bigint(20) NOT NULL DEFAULT '0' COMMENT '已上传流量，单位字节',
   `d` bigint(20) NOT NULL DEFAULT '0' COMMENT '已下载流量，单位字节',
   `t` int(11) NOT NULL DEFAULT '0' COMMENT '最后使用时间',
   `enable` tinyint(4) NOT NULL DEFAULT '1' COMMENT 'SS状态',
-  `method` varchar(30) NOT NULL DEFAULT 'aes-192-ctr' COMMENT '加密方式',
-  `protocol` varchar(30) NOT NULL DEFAULT 'auth_chain_a' COMMENT '协议',
+  `method` varchar(30) NOT NULL DEFAULT 'aes-256-cfb' COMMENT '加密方式',
+  `protocol` varchar(30) NOT NULL DEFAULT 'origin' COMMENT '协议',
   `protocol_param` varchar(255) DEFAULT '' COMMENT '协议参数',
-  `obfs` varchar(30) NOT NULL DEFAULT 'tls1.2_ticket_auth' COMMENT '混淆',
+  `obfs` varchar(30) NOT NULL DEFAULT 'plain' COMMENT '混淆',
   `obfs_param` varchar(255) DEFAULT '' COMMENT '混淆参数',
   `speed_limit_per_con` int(255) NOT NULL DEFAULT '204800' COMMENT '单连接限速，默认200M，单位KB',
   `speed_limit_per_user` int(255) NOT NULL DEFAULT '204800' COMMENT '单用户限速，默认200M，单位KB',
@@ -156,8 +165,8 @@ CREATE TABLE `user` (
 LOCK TABLES `user` WRITE;
 /*!40000 ALTER TABLE `user` DISABLE KEYS */;
 
-INSERT INTO `user` (`id`, `username`, `password`, `port`, `passwd`, `transfer_enable`, `u`, `d`, `t`, `enable`, `method`, `protocol`, `protocol_param`, `obfs`, `obfs_param`, `speed_limit_per_con`, `speed_limit_per_user`, `wechat`, `qq`, `usage`, `pay_way`, `balance`, `enable_time`, `expire_time`, `remark`, `is_admin`, `reg_ip`, `created_at`, `updated_at`)
-VALUES (1,'admin','e10adc3949ba59abbe56e057f20f883e',10000,'@123',1073741824000,0,0,0,1,'aes-192-ctr','auth_chain_a','','tls1.2_ticket_auth','',204800,204800,'','',1,3,0.00,NULL,'2099-01-01',NULL,1,'127.0.0.1',NULL,NULL);
+INSERT INTO `user` (`id`, `username`, `password`, `port`, `passwd`, `vmess_id`, `transfer_enable`, `u`, `d`, `t`, `enable`, `method`, `protocol`, `protocol_param`, `obfs`, `obfs_param`, `speed_limit_per_con`, `speed_limit_per_user`, `wechat`, `qq`, `usage`, `pay_way`, `balance`, `enable_time`, `expire_time`, `remark`, `is_admin`, `reg_ip`, `status`, `created_at`, `updated_at`)
+VALUES (1,'admin','$2y$10$ryMdx5ejvCSdjvZVZAPpOuxHrsAUY8FEINUATy6RCck6j9EeHhPfq',10000,'@123', 'c6effafd-6046-7a84-376e-b0429751c304', 1073741824000,0,0,0,1,'aes-256-cfb','origin','','plain','',204800,204800,'','',1,3,0.00,'2017-01-01','2099-01-01',NULL,1,'127.0.0.1',1,now(),now());
 
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -170,8 +179,6 @@ CREATE TABLE `level` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `level` int(11) NOT NULL DEFAULT '1' COMMENT '等级',
   `level_name` varchar(100) NOT NULL DEFAULT '' COMMENT '等级名称',
-  `created_at` datetime DEFAULT NULL,
-  `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='等级';
 
@@ -179,13 +186,13 @@ CREATE TABLE `level` (
 -- ----------------------------
 -- Records of `level`
 -- ----------------------------
-INSERT INTO `level` VALUES (1, '1', '青铜', '2017-10-26 15:56:52', '2017-10-26 15:38:58');
-INSERT INTO `level` VALUES (2, '2', '白银', '2017-10-26 15:57:30', '2017-10-26 12:37:51');
-INSERT INTO `level` VALUES (3, '3', '黄金', '2017-10-26 15:41:31', '2017-10-26 15:41:31');
-INSERT INTO `level` VALUES (4, '4', '铂金', '2017-10-26 15:41:38', '2017-10-26 15:41:38');
-INSERT INTO `level` VALUES (5, '5', '钻石', '2017-10-26 15:41:47', '2017-10-26 15:41:47');
-INSERT INTO `level` VALUES (6, '6', '星耀', '2017-10-26 15:41:56', '2017-10-26 15:41:56');
-INSERT INTO `level` VALUES (7, '7', '王者', '2017-10-26 15:42:02', '2017-10-26 15:42:02');
+INSERT INTO `level` VALUES (1, '1', '青铜');
+INSERT INTO `level` VALUES (2, '2', '白银');
+INSERT INTO `level` VALUES (3, '3', '黄金');
+INSERT INTO `level` VALUES (4, '4', '铂金');
+INSERT INTO `level` VALUES (5, '5', '钻石');
+INSERT INTO `level` VALUES (6, '6', '星耀');
+INSERT INTO `level` VALUES (7, '7', '王者');
 
 
 -- ----------------------------
@@ -350,6 +357,11 @@ INSERT INTO `config` VALUES ('67', 'is_tcp_check', 0);
 INSERT INTO `config` VALUES ('68', 'tcp_check_warning_times', 3);
 INSERT INTO `config` VALUES ('69', 'is_forbid_china', 0);
 INSERT INTO `config` VALUES ('70', 'is_forbid_oversea', 0);
+INSERT INTO `config` VALUES ('71', 'is_verify_register', 0);
+INSERT INTO `config` VALUES ('72', 'node_daily_report', 0);
+INSERT INTO `config` values ('73', 'mix_subscribe', 0);
+INSERT INTO `config` values ('74', 'rand_subscribe', 0);
+INSERT INTO `config` values ('75', 'is_custom_subscribe', 0);
 
 
 -- ----------------------------
@@ -359,6 +371,7 @@ CREATE TABLE `article` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `title` varchar(100) NOT NULL DEFAULT '' COMMENT '标题',
   `author` varchar(50) DEFAULT '' COMMENT '作者',
+  `summary` varchar(255) DEFAULT '' COMMENT '简介',
   `content` text COMMENT '内容',
   `type` tinyint(4) DEFAULT '1' COMMENT '类型：1-文章、2-公告',
   `is_del` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否删除',
@@ -412,14 +425,28 @@ INSERT INTO `label` VALUES ('6', '免费体验', '0');
 -- ----------------------------
 CREATE TABLE `verify` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `type` TINYINT NOT NULL DEFAULT '1' COMMENT '激活类型：1-自行激活、2-管理员激活',
   `user_id` int(11) NOT NULL COMMENT '用户ID',
-  `username` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '用户名',
   `token` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '校验token',
   `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '状态：0-未使用、1-已使用、2-已失效',
   `created_at` datetime DEFAULT NULL COMMENT '创建时间',
   `updated_at` datetime DEFAULT NULL COMMENT '最后更新时间',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='邮件地址';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='账号激活邮件地址';
+
+
+-- ----------------------------
+-- Table structure for `verify_code`
+-- ----------------------------
+CREATE TABLE `verify_code` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(128) NOT NULL COMMENT '用户邮箱',
+  `code` char(6) NOT NULL COMMENT '验证码',
+  `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '状态：0-未使用、1-已使用、2-已失效',
+  `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+  `updated_at` datetime DEFAULT NULL COMMENT '最后更新时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='注册激活验证码';
 
 
 -- ----------------------------
@@ -462,6 +489,7 @@ CREATE TABLE `goods` (
   `days` int(11) NOT NULL DEFAULT '30' COMMENT '有效期',
   `color` VARCHAR(50) NOT NULL DEFAULT 'green' COMMENT '商品颜色',
   `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序',
+  `is_limit` TINYINT(4) NOT NULL DEFAULT '0' COMMENT '是否限购：0-否、1-是',
   `is_hot` TINYINT(4) NOT NULL DEFAULT '0' COMMENT '是否热销：0-否、1-是',
   `is_del` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否已删除：0-否、1-是',
   `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '状态：0-下架、1-上架',
@@ -616,8 +644,8 @@ CREATE TABLE `user_traffic_modify_log` (
 	`id` INT(11) NOT NULL AUTO_INCREMENT,
 	`user_id` INT(11) NOT NULL DEFAULT '0' COMMENT '用户ID',
 	`order_id` INT(11) NOT NULL DEFAULT '0' COMMENT '发生的订单ID',
-	`before` INT(11) NOT NULL DEFAULT '0',
-	`after` INT(11) NOT NULL DEFAULT '0',
+	`before` BIGINT(20) NOT NULL DEFAULT '0' COMMENT '操作前流量',
+	`after` BIGINT(20) NOT NULL DEFAULT '0' COMMENT '操作后流量',
 	`desc` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '描述',
 	`created_at` DATETIME NOT NULL,
 	`updated_at` DATETIME NOT NULL,
@@ -664,9 +692,10 @@ CREATE TABLE `referral_log` (
 -- ----------------------------
 CREATE TABLE `email_log` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL DEFAULT '0' COMMENT '接收者ID',
-  `title` varchar(255) DEFAULT '' COMMENT '邮件标题',
-  `content` text COMMENT '邮件内容',
+  `type` TINYINT(4) NOT NULL DEFAULT '1' COMMENT '类型：1-邮件、2-serverChan',
+  `address` VARCHAR(255) NOT NULL COMMENT '收信地址',
+  `title` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '标题',
+  `content` TEXT NOT NULL COMMENT '内容',
   `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '状态：1-发送成功、2-发送失败',
   `error` text COMMENT '发送失败抛出的异常信息',
   `created_at` datetime DEFAULT NULL COMMENT '创建时间',
@@ -678,9 +707,9 @@ CREATE TABLE `email_log` (
 -- Table structure for `sensitive_words`
 -- ----------------------------
 CREATE TABLE `sensitive_words` (
-	`id` INT(11) NOT NULL AUTO_INCREMENT,
-	`words` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '敏感词',
-	PRIMARY KEY (`id`)
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `words` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '敏感词',
+  PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='敏感词';
 
 
@@ -1096,7 +1125,21 @@ CREATE TABLE `user_login_log` (
 	`created_at` DATETIME NOT NULL,
 	`updated_at` DATETIME NOT NULL,
 	PRIMARY KEY (`id`)
-) ENGINE=InnoDB COLLATE='utf8mb4_general_ci' COMMENT='用户登录日志';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户登录日志';
+
+
+-- ----------------------------
+-- Table structure for `ss_node_ip`
+-- ----------------------------
+CREATE TABLE `ss_node_ip` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `node_id` int(11) NOT NULL DEFAULT '0' COMMENT '节点ID',
+  `port` int(11) NOT NULL DEFAULT '0' COMMENT '端口',
+  `type` char(10) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'tcp' COMMENT '类型：tcp、udp',
+  `ip` text COLLATE utf8mb4_unicode_ci COMMENT '连接IP：每个IP用,号隔开',
+  `created_at` int(11) NOT NULL DEFAULT '0' COMMENT '上报时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;

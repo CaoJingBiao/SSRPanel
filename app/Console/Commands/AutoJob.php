@@ -10,6 +10,7 @@ use App\Http\Models\ReferralLog;
 use App\Http\Models\SsNode;
 use App\Http\Models\SsNodeLabel;
 use App\Http\Models\UserBalanceLog;
+use App\Http\Models\VerifyCode;
 use App\Mail\sendUserInfo;
 use Illuminate\Console\Command;
 use App\Http\Models\Coupon;
@@ -45,6 +46,9 @@ class AutoJob extends Command
     {
         $jobStartTime = microtime(true);
 
+        // 注册验证码自动置无效
+        $this->expireVerifyCode();
+
         // 优惠券到期自动置无效
         $this->expireCoupon();
 
@@ -56,9 +60,6 @@ class AutoJob extends Command
 
         // 封禁账号
         $this->blockUsers();
-
-        // 移除过期的账号的标签和流量
-        $this->removeUserLabels();
 
         // 解封被封禁的账号
         $this->unblockUsers();
@@ -76,6 +77,12 @@ class AutoJob extends Command
         $jobUsedTime = round(($jobEndTime - $jobStartTime), 4);
 
         Log::info('执行定时任务【' . $this->description . '】，耗时' . $jobUsedTime . '秒');
+    }
+
+    // 注册验证码自动置无效
+    private function expireVerifyCode()
+    {
+        VerifyCode::query()->where('status', 0)->where('created_at', '<=', date('Y-m-d H:i:s', strtotime("-10 minutes")))->update(['status' => 2]);
     }
 
     // 优惠券到期自动置无效
@@ -139,6 +146,14 @@ class AutoJob extends Command
                     ]);
 
                     $this->addUserBanLog($user->id, 0, '【禁止登录，清空账户】-账号已过期');
+
+                    // 如果注册就有初始流量，则废除其名下邀请码
+                    if (self::$systemConfig['default_traffic']) {
+                        Invite::query()->where('uid', $user->id)->where('status', 0)->update(['status' => 2]);
+                    }
+
+                    // 写入用户流量变动记录
+                    Helpers::addUserTrafficModifyLog($user->id, 0, $user->transfer_enable, 0, '[定时任务]账号已过期(禁止登录，清空账户)');
                 } else {
                     User::query()->where('id', $user->id)->update([
                         'u'                 => 0,
@@ -150,7 +165,13 @@ class AutoJob extends Command
                     ]);
 
                     $this->addUserBanLog($user->id, 0, '【封禁代理，清空账户】-账号已过期');
+
+                    // 写入用户流量变动记录
+                    Helpers::addUserTrafficModifyLog($user->id, 0, $user->transfer_enable, 0, '[定时任务]账号已过期(封禁代理，清空账户)');
                 }
+
+                // 移除标签
+                UserLabel::query()->where('user_id', $user->id)->delete();
             }
         }
 
@@ -179,23 +200,6 @@ class AutoJob extends Command
 
                 // 写入日志
                 $this->addUserBanLog($user->id, 0, '【封禁代理】-流量已用完');
-            }
-        }
-    }
-
-    // 移除过期的账号的标签和流量（临时封禁不移除）
-    private function removeUserLabels()
-    {
-        $userList = User::query()->where('enable', 0)->where('ban_time', 0)->where('expire_time', '<', date('Y-m-d'))->get();
-        if (!$userList->isEmpty()) {
-            foreach ($userList as $user) {
-                UserLabel::query()->where('user_id', $user->id)->delete();
-                User::query()->where('id', $user->id)->update([
-                    'u'                 => 0,
-                    'd'                 => 0,
-                    'transfer_enable'   => 0,
-                    'traffic_reset_day' => 0
-                ]);
             }
         }
     }
@@ -303,6 +307,7 @@ class AutoJob extends Command
                             $user->password = md5(makeRandStr());
                             $user->port = $port;
                             $user->passwd = makeRandStr();
+                            $user->vmess_id = createGuid();
                             $user->enable = 1;
                             $user->method = Helpers::getDefaultMethod();
                             $user->protocol = Helpers::getDefaultProtocol();
@@ -354,8 +359,14 @@ class AutoJob extends Command
 
                                     // 先判断，防止手动扣减过流量的用户流量被扣成负数
                                     if ($order->user->transfer_enable - $vo->goods->traffic * 1048576 <= 0) {
+                                        // 写入用户流量变动记录
+                                        Helpers::addUserTrafficModifyLog($order->user_id, 0, $order->user->transfer_enable, 0, '[定时任务]审计待支付的订单(扣完)');
+
                                         User::query()->where('id', $order->user_id)->update(['u' => 0, 'd' => 0, 'transfer_enable' => 0]);
                                     } else {
+                                        // 写入用户流量变动记录
+                                        Helpers::addUserTrafficModifyLog($order->user_id, 0, $order->user->transfer_enable, ($order->user->transfer_enable - $vo->goods->traffic * 1048576), '[定时任务]审计待支付的订单');
+
                                         User::query()->where('id', $order->user_id)->update(['u' => 0, 'd' => 0]);
                                         User::query()->where('id', $order->user_id)->decrement('transfer_enable', $vo->goods->traffic * 1048576);
                                     }
@@ -453,9 +464,9 @@ class AutoJob extends Command
 
                             try {
                                 Mail::to($order->email)->send(new sendUserInfo(self::$systemConfig['website_name'], $content));
-                                Helpers::addEmailLog($order->user_id, $title, json_encode($content));
+                                Helpers::addEmailLog($order->email, $title, json_encode($content));
                             } catch (\Exception $e) {
-                                Helpers::addEmailLog($order->user_id, $title, json_encode($content), 0, $e->getMessage());
+                                Helpers::addEmailLog($order->email, $title, json_encode($content), 0, $e->getMessage());
                             }
                         }
 
@@ -463,7 +474,7 @@ class AutoJob extends Command
                     } catch (\Exception $e) {
                         DB::rollBack();
 
-                        Log::info('【有赞云】审计订单时更新支付单和订单异常：' . $e->getMessage());
+                        Log::info('【有赞云】审计订单时更新支付单和订单异常：' . $e);
                     }
                 }
             }

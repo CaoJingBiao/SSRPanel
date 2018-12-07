@@ -10,6 +10,7 @@ return [
     'username_placeholder'            => 'アカウントを入力してください',
     'system_down'                     => 'システムはメンテナンス中です',
     'subscribe_baned'                 => '購読が無効になっています。管理者にお問い合わせください。',
+    'download'                        => 'ダウンロード',
 
     // 菜单
     'home'                            => 'パーソナルセンター',
@@ -38,6 +39,7 @@ return [
     'account_total_traffic'           => 'データ通信量の上限',
     'account_usage_traffic'           => '使用済み',
     'account_reset_notice'            => '毎月 :reset_day 日にデータ通信量をリセットする',
+    'account_login_log'               => '登録ログ',
     'article_title'                   => '文章',
     'recharge'                        => 'チャージ',
     'enabled'                         => '有効',

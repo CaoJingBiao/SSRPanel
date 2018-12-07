@@ -10,6 +10,7 @@ return [
     'username_placeholder'            => '请输入用户名',
     'system_down'                     => '系统维护中',
     'subscribe_baned'                 => '您的订阅功能被禁用，请联系管理员恢复',
+    'download'                        => '下载',
 
     // 菜单
     'home'                            => '个人中心',
@@ -26,7 +27,7 @@ return [
     // 首页
     'ratio_tips'                      => '推荐使用支持节点订阅功能的客户端，通过订阅功能可以在客户端快速同步节点信息。',
     'subscribe_button'                => '获取订阅地址',
-    'account_info'                    => '账号信息',
+    'account_info'                    => '账户信息',
     'account_level'                   => '等级',
     'account_balance'                 => '账户余额',
     'account_score'                   => '积分',
@@ -38,6 +39,7 @@ return [
     'account_total_traffic'           => '共计',
     'account_usage_traffic'           => '已使用',
     'account_reset_notice'            => '每月 :reset_day 日重置',
+    'account_login_log'               => '登陆日志',
     'article_title'                   => '文章',
     'recharge'                        => '充值',
     'enabled'                         => '正常',

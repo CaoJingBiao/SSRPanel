@@ -57,11 +57,10 @@ class Kernel extends HttpKernel
         'can' => \Illuminate\Auth\Middleware\Authorize::class,
         'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
-        'admin' => \App\Http\Middleware\Admin::class,
-        'user' => \App\Http\Middleware\User::class,
-        'forbidden' => \App\Http\Middleware\Forbidden::class,
+        'isAdmin' => \App\Http\Middleware\isAdmin::class,
+        'isLogin' => \App\Http\Middleware\isLogin::class,
+        'isForbidden' => \App\Http\Middleware\isForbidden::class,
         'affiliate' => \App\Http\Middleware\Affiliate::class,
-        'Muv2' => \App\Http\Middleware\Muv2::class
 
     ];
 }

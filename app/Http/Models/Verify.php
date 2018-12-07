@@ -5,10 +5,12 @@ namespace App\Http\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * 验证
+ * 注册时的验证激活地址
  * Class Verify
  *
  * @package App\Http\Models
+ * @property-read \App\Http\Models\User $User
+ * @mixin \Eloquent
  */
 class Verify extends Model
 {

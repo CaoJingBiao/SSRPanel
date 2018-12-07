@@ -6,6 +6,7 @@ use App\Components\Helpers;
 use App\Http\Models\Article;
 use App\Http\Models\Config;
 use App\Http\Models\Country;
+use App\Http\Models\EmailLog;
 use App\Http\Models\Invite;
 use App\Http\Models\Label;
 use App\Http\Models\Level;
@@ -38,7 +39,16 @@ use Response;
 use Session;
 use Log;
 use DB;
+use Auth;
+use Hash;
 
+/**
+ * 管理员控制器
+ *
+ * Class AdminController
+ *
+ * @package App\Http\Controllers
+ */
 class AdminController extends Controller
 {
     protected static $systemConfig;
@@ -85,6 +95,11 @@ class AdminController extends Controller
         $view['totalBalance'] = User::query()->sum('balance') / 100;
         $view['totalWaitRefAmount'] = ReferralLog::query()->whereIn('status', [0, 1])->sum('ref_amount') / 100;
         $view['totalRefAmount'] = ReferralApply::query()->where('status', 2)->sum('amount') / 100;
+
+        $view['totalOrder'] = Order::query()->count();
+        $view['totalOnlinePayOrder'] = Order::query()->where('pay_way', 2)->count();
+        $view['totalSuccessOrder'] = Order::query()->where('status', 2)->count();
+        $view['todaySuccessOrder'] = Order::query()->where('status', 2)->where('created_at', '>=', date('Y-m-d 00:00:00'))->where('created_at', '<=', date('Y-m-d 23:59:59'))->count();
 
         return Response::view('admin.index', $view);
     }
@@ -168,7 +183,7 @@ class AdminController extends Controller
             $query->whereIn('id', $tempUsers);
         }
 
-        $userList = $query->orderBy('enable', 'desc')->orderBy('status', 'desc')->orderBy('id', 'desc')->paginate(15)->appends($request->except('page'));
+        $userList = $query->orderBy('id', 'desc')->paginate(15)->appends($request->except('page'));
         foreach ($userList as &$user) {
             $user->transfer_enable = flowAutoShow($user->transfer_enable);
             $user->used_flow = flowAutoShow($user->u + $user->d);
@@ -203,47 +218,47 @@ class AdminController extends Controller
                 return Response::json(['status' => 'fail', 'data' => '', 'message' => '用户名已存在，请重新输入']);
             }
 
+            if (!$request->get('usage')) {
+                return Response::json(['status' => 'fail', 'data' => '', 'message' => '请至少选择一种用途']);
+            }
+
             $user = new User();
             $user->username = trim($request->get('username'));
-            $user->password = trim($request->get('password')) ? md5(trim($request->get('password'))) : md5(makeRandStr()); // 密码为空时则生成随机密码
+            $user->password = trim($request->get('password')) ? Hash::make(trim($request->get('password'))) : Hash::make(makeRandStr());
             $user->port = $request->get('port');
-            $user->passwd = empty($request->get('passwd')) ? makeRandStr() : $request->get('passwd'); // SS密码为空时生成默认密码
+            $user->passwd = empty($request->get('passwd')) ? makeRandStr() : $request->get('passwd');
+            $user->vmess_id = trim($request->get('vmess_id', createGuid()));
             $user->transfer_enable = toGB($request->get('transfer_enable', 0));
-            $user->enable = $request->get('enable', 0);
+            $user->enable = intval($request->get('enable', 0));
             $user->method = $request->get('method');
-            $user->protocol = $request->get('protocol', '');
-            $user->protocol_param = $request->get('protocol_param', '');
-            $user->obfs = $request->get('obfs', '');
-            $user->obfs_param = $request->get('obfs_param', '');
-            $user->gender = $request->get('gender', 1);
-            $user->wechat = $request->get('wechat', '');
-            $user->qq = $request->get('qq', '');
-            $user->usage = $request->get('usage', 1);
-            $user->pay_way = $request->get('pay_way', 1);
+            $user->protocol = $request->get('protocol');
+            $user->protocol_param = $request->get('protocol_param') ? $request->get('protocol_param') : '';
+            $user->obfs = $request->get('obfs');
+            $user->obfs_param = $request->get('obfs_param') ? $request->get('obfs_param') : '';
+            $user->gender = $request->get('gender');
+            $user->wechat = $request->get('wechat') ? $request->get('wechat') : '';
+            $user->qq = $request->get('qq') ? $request->get('qq') : '';
+            $user->usage = $request->get('usage');
+            $user->pay_way = $request->get('pay_way');
             $user->balance = 0;
             $user->score = 0;
             $user->enable_time = empty($request->get('enable_time')) ? date('Y-m-d') : $request->get('enable_time');
             $user->expire_time = empty($request->get('expire_time')) ? date('Y-m-d', strtotime("+365 days")) : $request->get('expire_time');
-            $user->remark = clean($request->get('remark', ''));
-            $user->level = $request->get('level', 1);
+            $user->remark = str_replace("eval", "", str_replace("atob", "", $request->get('remark')));
+            $user->level = $request->get('level') ? $request->get('level') : 1;
             $user->is_admin = 0;
             $user->reg_ip = getClientIp();
             $user->referral_uid = 0;
             $user->traffic_reset_day = 0;
-            $user->status = 1;
+            $user->status = $request->get('status') ? $request->get('status') : 1;
             $user->save();
 
             if ($user->id) {
                 // 生成用户标签
-                $labels = $request->get('labels');
-                if (!empty($labels)) {
-                    foreach ($labels as $label) {
-                        $userLabel = new UserLabel();
-                        $userLabel->user_id = $user->id;
-                        $userLabel->label_id = $label;
-                        $userLabel->save();
-                    }
-                }
+                $this->makeUserLabels($user->id, $request->get('labels', []));
+
+                // 写入用户流量变动记录
+                Helpers::addUserTrafficModifyLog($user->id, 0, 0, toGB($request->get('transfer_enable', 0)), '后台手动添加用户');
 
                 return Response::json(['status' => 'success', 'data' => '', 'message' => '添加成功']);
             } else {
@@ -252,7 +267,6 @@ class AdminController extends Controller
         } else {
             // 生成一个可用端口
             $view['last_port'] = self::$systemConfig['is_rand_port'] ? Helpers::getRandPort() : Helpers::getOnlyPort();
-            $view['is_rand_port'] = self::$systemConfig['is_rand_port'];
             $view['method_list'] = Helpers::methodList();
             $view['protocol_list'] = Helpers::protocolList();
             $view['obfs_list'] = Helpers::obfsList();
@@ -274,17 +288,21 @@ class AdminController extends Controller
 
                 $user = new User();
                 $user->username = '批量生成-' . makeRandStr();
-                $user->password = md5(makeRandStr());
+                $user->password = Hash::make(makeRandStr());
                 $user->port = $port;
                 $user->passwd = makeRandStr();
+                $user->vmess_id = createGuid();
                 $user->enable = 1;
                 $user->method = Helpers::getDefaultMethod();
                 $user->protocol = Helpers::getDefaultProtocol();
+                $user->protocol_param = '';
                 $user->obfs = Helpers::getDefaultObfs();
-                $user->usage = 1;
-                $user->transfer_enable = toGB(1000);
+                $user->obfs_param = '';
+                $user->usage = 4;
+                $user->transfer_enable = toGB(1024);
                 $user->enable_time = date('Y-m-d');
                 $user->expire_time = date('Y-m-d', strtotime("+365 days"));
+                $user->remark = '';
                 $user->reg_ip = getClientIp();
                 $user->referral_uid = 0;
                 $user->traffic_reset_day = 0;
@@ -294,13 +312,11 @@ class AdminController extends Controller
                 // 初始化默认标签
                 if (count(self::$systemConfig['initial_labels_for_user']) > 0) {
                     $labels = explode(',', self::$systemConfig['initial_labels_for_user']);
-                    foreach ($labels as $label) {
-                        $userLabel = new UserLabel();
-                        $userLabel->user_id = $user->id;
-                        $userLabel->label_id = $label;
-                        $userLabel->save();
-                    }
+                    $this->makeUserLabels($user->id, $labels);
                 }
+
+                // 写入用户流量变动记录
+                Helpers::addUserTrafficModifyLog($user->id, 0, 0, toGB(1024), '后台批量生成用户');
             }
 
             DB::commit();
@@ -316,20 +332,21 @@ class AdminController extends Controller
     // 编辑账号
     public function editUser(Request $request)
     {
-        $id = $request->get('id');
+        $id = intval($request->get('id'));
 
         if ($request->method() == 'POST') {
             $username = trim($request->get('username'));
             $password = $request->get('password');
             $port = intval($request->get('port'));
             $passwd = $request->get('passwd');
+            $vmess_id = $request->get('vmess_id') ? $request->get('vmess_id') : createGuid();
             $transfer_enable = $request->get('transfer_enable');
             $enable = intval($request->get('enable'));
             $method = $request->get('method');
             $protocol = $request->get('protocol');
-            $protocol_param = $request->get('protocol_param', '');
+            $protocol_param = $request->get('protocol_param');
             $obfs = $request->get('obfs');
-            $obfs_param = $request->get('obfs_param', '');
+            $obfs_param = $request->get('obfs_param');
             $speed_limit_per_con = $request->get('speed_limit_per_con');
             $speed_limit_per_user = $request->get('speed_limit_per_user');
             $gender = $request->get('gender');
@@ -338,11 +355,10 @@ class AdminController extends Controller
             $usage = $request->get('usage');
             $pay_way = $request->get('pay_way');
             $status = $request->get('status');
-            $labels = $request->get('labels');
+            $labels = $request->get('labels', []);
             $enable_time = $request->get('enable_time');
             $expire_time = $request->get('expire_time');
-            $remark = clean($request->get('remark'));
-            $remark = str_replace("eval", "", str_replace("atob", "", $remark));
+            $remark = str_replace("eval", "", str_replace("atob", "", $request->get('remark')));
             $level = $request->get('level');
             $is_admin = $request->get('is_admin');
 
@@ -358,14 +374,27 @@ class AdminController extends Controller
                 return Response::json(['status' => 'fail', 'data' => '', 'message' => '端口已存在，请重新输入']);
             }
 
+            // 禁止取消默认管理员
+            if ($id == 1 && $is_admin == 0) {
+                return Response::json(['status' => 'fail', 'data' => '', 'message' => '系统默认管理员不可取消']);
+            }
+
+            if (!$request->get('usage')) {
+                return Response::json(['status' => 'fail', 'data' => '', 'message' => '请至少选择一种用途']);
+            }
+
+            // 用户编辑前的信息
+            $user = User::query()->where('id', $id)->first();
+
             DB::beginTransaction();
             try {
                 $data = [
                     'username'             => $username,
                     'port'                 => $port,
                     'passwd'               => $passwd,
+                    'vmess_id'             => $vmess_id,
                     'transfer_enable'      => toGB($transfer_enable),
-                    'enable'               => $status < 0 ? 0 : $enable, // 如果禁止登陆则同时禁用SSR
+                    'enable'               => $status < 0 ? 0 : $enable, // 如果禁止登陆则同时禁用代理
                     'method'               => $method,
                     'protocol'             => $protocol,
                     'protocol_param'       => $protocol_param,
@@ -383,29 +412,26 @@ class AdminController extends Controller
                     'expire_time'          => empty($expire_time) ? date('Y-m-d', strtotime("+365 days")) : $expire_time,
                     'remark'               => $remark,
                     'level'                => $level,
-                    'is_admin'             => $is_admin
                 ];
+
+                // 只有admin才有权限操作管理员属性
+                if (Auth::user()->id == 1) {
+                    $data['is_admin'] = $is_admin;
+                }
 
                 if (!empty($password)) {
                     if (!(env('APP_DEMO') && $id == 1)) { // 演示环境禁止修改管理员密码
-                        $data['password'] = md5($password);
+                        $data['password'] = Hash::make($password);
                     }
                 }
 
                 User::query()->where('id', $id)->update($data);
 
                 // 重新生成用户标签
-                if (!empty($labels)) {
-                    // 先删除该用户所有的标签
-                    UserLabel::query()->where('user_id', $id)->delete();
+                $this->makeUserLabels($id, $labels);
 
-                    foreach ($labels as $label) {
-                        $userLabel = new UserLabel();
-                        $userLabel->user_id = $id;
-                        $userLabel->label_id = $label;
-                        $userLabel->save();
-                    }
-                }
+                // 写入用户流量变动记录
+                Helpers::addUserTrafficModifyLog($id, 0, $user->transfer_enable, toGB($transfer_enable), '后台手动编辑用户');
 
                 DB::commit();
 
@@ -482,7 +508,7 @@ class AdminController extends Controller
             $totalTraffic = SsNodeTrafficDaily::query()->where('node_id', $node->id)->sum('total');
             $node->transfer = flowAutoShow($totalTraffic);
 
-            // 负载（10分钟以内） TODO:待改造
+            // 负载（10分钟以内）
             $node_info = SsNodeInfo::query()->where('node_id', $node->id)->where('log_time', '>=', strtotime("-10 minutes"))->orderBy('id', 'desc')->first();
             $node->load = empty($node_info) || empty($node_info->load) ? '宕机' : $node_info->load;
         }
@@ -523,35 +549,43 @@ class AdminController extends Controller
             DB::beginTransaction();
             try {
                 $ssNode = new SsNode();
+                $ssNode->type = $request->get('type');
                 $ssNode->name = $request->get('name');
-                $ssNode->group_id = intval($request->get('group_id', 0));
-                $ssNode->country_code = $request->get('country_code', 'un');
-                $ssNode->server = $request->get('server', '');
+                $ssNode->group_id = $request->get('group_id') ? intval($request->get('group_id')) : 0;
+                $ssNode->country_code = $request->get('country_code') ? $request->get('country_code') : 'un';
+                $ssNode->server = $request->get('server') ? $request->get('server') : '';
                 $ssNode->ip = $request->get('ip');
                 $ssNode->ipv6 = $request->get('ipv6');
-                $ssNode->desc = $request->get('desc', '');
+                $ssNode->desc = $request->get('desc') ? $request->get('desc') : '';
                 $ssNode->method = $request->get('method');
                 $ssNode->protocol = $request->get('protocol');
-                $ssNode->protocol_param = $request->get('protocol_param');
-                $ssNode->obfs = $request->get('obfs', '');
-                $ssNode->obfs_param = $request->get('obfs_param', '');
-                $ssNode->traffic_rate = $request->get('traffic_rate', 1);
-                $ssNode->bandwidth = $request->get('bandwidth', 100);
-                $ssNode->traffic = $request->get('traffic', 1000);
-                $ssNode->monitor_url = $request->get('monitor_url', '');
-                $ssNode->is_subscribe = intval($request->get('is_subscribe', 1));
-                $ssNode->ssh_port = intval($request->get('ssh_port', 22));
-                $ssNode->is_tcp_check = intval($request->get('is_tcp_check', 1));
-                $ssNode->compatible = intval($request->get('compatible', 0));
-                $ssNode->single = intval($request->get('single', 0));
+                $ssNode->protocol_param = $request->get('protocol_param') ? $request->get('protocol_param') : '';
+                $ssNode->obfs = $request->get('obfs') ? $request->get('obfs') : '';
+                $ssNode->obfs_param = $request->get('obfs_param') ? $request->get('obfs_param') : '';
+                $ssNode->traffic_rate = $request->get('traffic_rate') ? $request->get('traffic_rate') : 1;
+                $ssNode->bandwidth = $request->get('bandwidth');
+                $ssNode->traffic = $request->get('traffic');
+                $ssNode->monitor_url = $request->get('monitor_url') ? $request->get('monitor_url') : '';
+                $ssNode->is_subscribe = intval($request->get('is_subscribe'));
+                $ssNode->ssh_port = $request->get('ssh_port') ? intval($request->get('ssh_port')) : 22;
+                $ssNode->is_tcp_check = intval($request->get('is_tcp_check'));
+                $ssNode->compatible = intval($request->get('compatible'));
+                $ssNode->single = intval($request->get('single'));
                 $ssNode->single_force = $request->get('single') ? $request->get('single_force') : 0;
                 $ssNode->single_port = $request->get('single') ? $request->get('single_port') : '';
                 $ssNode->single_passwd = $request->get('single') ? $request->get('single_passwd') : '';
                 $ssNode->single_method = $request->get('single') ? $request->get('single_method') : '';
                 $ssNode->single_protocol = $request->get('single') ? $request->get('single_protocol') : '';
                 $ssNode->single_obfs = $request->get('single') ? $request->get('single_obfs') : '';
-                $ssNode->sort = intval($request->get('sort', 0));
-                $ssNode->status = intval($request->get('status', 1));
+                $ssNode->sort = $request->get('sort') ? intval($request->get('sort')) : 0;
+                $ssNode->status = $request->get('status') ? intval($request->get('status')) : 1;
+                $ssNode->v2_alter_id = $request->get('v2_alter_id') ? intval($request->get('v2_alter_id')) : 16;
+                $ssNode->v2_port = $request->get('v2_port') ? intval($request->get('v2_port')) : 32000;
+                $ssNode->v2_net = $request->get('v2_net') ? $request->get('v2_net') : 'tcp';
+                $ssNode->v2_type = $request->get('v2_type') ? $request->get('v2_type') : 'none';
+                $ssNode->v2_host = $request->get('v2_host') ? $request->get('v2_host') : '';
+                $ssNode->v2_path = $request->get('v2_path') ? $request->get('v2_path') : '';
+                $ssNode->v2_tls = $request->get('v2_tls') ? intval($request->get('v2_tls')) : 0;
                 $ssNode->save();
 
                 // 建立分组关联
@@ -623,16 +657,21 @@ class AdminController extends Controller
                 }
             }
 
+            if ($request->get('v2_alter_id') <= 0 || $request->get('v2_alter_id') >= 65535) {
+                return Response::json(['status' => 'fail', 'data' => '', 'message' => '编辑失败：AlterId不合法']);
+            }
+
             DB::beginTransaction();
             try {
                 $data = [
+                    'type'            => intval($request->get('type')),
                     'name'            => $request->get('name'),
-                    'group_id'        => intval($request->get('group_id', 0)),
-                    'country_code'    => $request->get('country_code', 'un'),
-                    'server'          => $request->get('server', ''),
+                    'group_id'        => $request->get('group_id') ? $request->get('group_id') : 0,
+                    'country_code'    => $request->get('country_code'),
+                    'server'          => $request->get('server'),
                     'ip'              => $request->get('ip'),
-                    'ipv6'            => $request->get('ipv6', ''),
-                    'desc'            => $request->get('desc', ''),
+                    'ipv6'            => $request->get('ipv6'),
+                    'desc'            => $request->get('desc'),
                     'method'          => $request->get('method'),
                     'protocol'        => $request->get('protocol'),
                     'protocol_param'  => $request->get('protocol_param'),
@@ -642,19 +681,26 @@ class AdminController extends Controller
                     'bandwidth'       => $request->get('bandwidth'),
                     'traffic'         => $request->get('traffic'),
                     'monitor_url'     => $request->get('monitor_url'),
-                    'is_subscribe'    => intval($request->get('is_subscribe', 1)),
-                    'ssh_port'        => intval($request->get('ssh_port', 22)),
-                    'is_tcp_check'    => intval($request->get('is_tcp_check', 1)),
-                    'compatible'      => intval($request->get('compatible', 1)),
-                    'single'          => intval($request->get('single', 0)),
+                    'is_subscribe'    => intval($request->get('is_subscribe')),
+                    'ssh_port'        => intval($request->get('ssh_port')),
+                    'is_tcp_check'    => intval($request->get('is_tcp_check')),
+                    'compatible'      => intval($request->get('compatible')),
+                    'single'          => intval($request->get('single')),
                     'single_force'    => $request->get('single') ? $request->get('single_force') : 0,
                     'single_port'     => $request->get('single') ? $request->get('single_port') : '',
                     'single_passwd'   => $request->get('single') ? $request->get('single_passwd') : '',
                     'single_method'   => $request->get('single') ? $request->get('single_method') : '',
                     'single_protocol' => $request->get('single') ? $request->get('single_protocol') : '',
                     'single_obfs'     => $request->get('single') ? $request->get('single_obfs') : '',
-                    'sort'            => intval($request->get('sort', 0)),
+                    'sort'            => intval($request->get('sort')),
                     'status'          => intval($request->get('status')),
+                    'v2_alter_id'     => intval($request->get('v2_alter_id')),
+                    'v2_port'         => $request->get('v2_port') ? $request->get('v2_port') : 32000,
+                    'v2_net'          => $request->get('v2_net'),
+                    'v2_type'         => $request->get('v2_type'),
+                    'v2_host'         => $request->get('v2_host'),
+                    'v2_path'         => $request->get('v2_path'),
+                    'v2_tls'          => intval($request->get('v2_tls'))
                 ];
 
                 SsNode::query()->where('id', $id)->update($data);
@@ -685,7 +731,7 @@ class AdminController extends Controller
                     }
                 }
 
-                // TODO:更新节点绑定的域名DNS（将节点IP更新到域名DNS）
+                // TODO:更新节点绑定的域名DNS（将节点IP更新到域名DNS 的A记录）
 
 
                 DB::commit();
@@ -833,6 +879,7 @@ class AdminController extends Controller
             $article->title = $request->get('title');
             $article->type = $request->get('type', 1);
             $article->author = $request->get('author');
+            $article->summary = $request->get('summary');
             $article->content = $request->get('content');
             $article->is_del = 0;
             $article->sort = $request->get('sort', 0);
@@ -853,13 +900,15 @@ class AdminController extends Controller
             $title = $request->get('title');
             $type = $request->get('type');
             $author = $request->get('author');
-            $sort = $request->get('sort');
+            $summary = $request->get('summary');
             $content = $request->get('content');
+            $sort = $request->get('sort');
 
             $data = [
                 'title'   => $title,
                 'type'    => $type,
                 'author'  => $author,
+                'summary' => $summary,
                 'content' => $content,
                 'sort'    => $sort
             ];
@@ -1212,9 +1261,10 @@ class AdminController extends Controller
                 foreach ($data as $user) {
                     $obj = new User();
                     $obj->username = $user->user;
-                    $obj->password = md5('123456');
+                    $obj->password = Hash::make('123456');
                     $obj->port = $user->port;
                     $obj->passwd = $user->passwd;
+                    $obj->vmess_id = $user->vmess_id;
                     $obj->transfer_enable = $user->transfer_enable;
                     $obj->u = 0;
                     $obj->d = 0;
@@ -1278,46 +1328,81 @@ class AdminController extends Controller
             // 获取分组名称
             $group = SsGroup::query()->where('id', $node->group_id)->first();
 
-            // 生成ssr scheme
-            $obfs_param = $user->obfs_param ? $user->obfs_param : $node->obfs_param;
-            $protocol_param = $node->single ? $user->port . ':' . $user->passwd : $user->protocol_param;
+            if ($node->type == 1) {
+                // 生成ssr scheme
+                $obfs_param = $user->obfs_param ? $user->obfs_param : $node->obfs_param;
+                $protocol_param = $node->single ? $user->port . ':' . $user->passwd : $user->protocol_param;
 
-            $ssr_str = ($node->server ? $node->server : $node->ip) . ':' . ($node->single ? $node->single_port : $user->port);
-            $ssr_str .= ':' . ($node->single ? $node->single_protocol : $user->protocol) . ':' . ($node->single ? $node->single_method : $user->method);
-            $ssr_str .= ':' . ($node->single ? $node->single_obfs : $user->obfs) . ':' . ($node->single ? base64url_encode($node->single_passwd) : base64url_encode($user->passwd));
-            $ssr_str .= '/?obfsparam=' . base64url_encode($obfs_param);
-            $ssr_str .= '&protoparam=' . ($node->single ? base64url_encode($user->port . ':' . $user->passwd) : base64url_encode($protocol_param));
-            $ssr_str .= '&remarks=' . base64url_encode($node->name);
-            $ssr_str .= '&group=' . base64url_encode(empty($group) ? '' : $group->name);
-            $ssr_str .= '&udpport=0';
-            $ssr_str .= '&uot=0';
-            $ssr_str = base64url_encode($ssr_str);
-            $ssr_scheme = 'ssr://' . $ssr_str;
+                $ssr_str = ($node->server ? $node->server : $node->ip) . ':' . ($node->single ? $node->single_port : $user->port);
+                $ssr_str .= ':' . ($node->single ? $node->single_protocol : $user->protocol) . ':' . ($node->single ? $node->single_method : $user->method);
+                $ssr_str .= ':' . ($node->single ? $node->single_obfs : $user->obfs) . ':' . ($node->single ? base64url_encode($node->single_passwd) : base64url_encode($user->passwd));
+                $ssr_str .= '/?obfsparam=' . base64url_encode($obfs_param);
+                $ssr_str .= '&protoparam=' . ($node->single ? base64url_encode($user->port . ':' . $user->passwd) : base64url_encode($protocol_param));
+                $ssr_str .= '&remarks=' . base64url_encode($node->name);
+                $ssr_str .= '&group=' . base64url_encode(empty($group) ? '' : $group->name);
+                $ssr_str .= '&udpport=0';
+                $ssr_str .= '&uot=0';
+                $ssr_str = base64url_encode($ssr_str);
+                $ssr_scheme = 'ssr://' . $ssr_str;
 
-            // 生成ss scheme
-            $ss_str = $user->method . ':' . $user->passwd . '@';
-            $ss_str .= ($node->server ? $node->server : $node->ip) . ':' . $user->port;
-            $ss_str = base64url_encode($ss_str) . '#' . 'VPN';
-            $ss_scheme = 'ss://' . $ss_str;
+                // 生成ss scheme
+                $ss_str = $user->method . ':' . $user->passwd . '@';
+                $ss_str .= ($node->server ? $node->server : $node->ip) . ':' . $user->port;
+                $ss_str = base64url_encode($ss_str) . '#' . 'VPN';
+                $ss_scheme = 'ss://' . $ss_str;
 
-            // 生成配置信息
-            $txt = "服务器：" . ($node->server ? $node->server : $node->ip) . "\r\n";
-            if ($node->ipv6) {
-                $txt .= "IPv6：" . $node->ipv6 . "\r\n";
+                // 生成配置信息
+                $txt = "服务器：" . ($node->server ? $node->server : $node->ip) . "\r\n";
+                if ($node->ipv6) {
+                    $txt .= "IPv6：" . $node->ipv6 . "\r\n";
+                }
+                $txt .= "远程端口：" . ($node->single ? $node->single_port : $user->port) . "\r\n";
+                $txt .= "密码：" . ($node->single ? $node->single_passwd : $user->passwd) . "\r\n";
+                $txt .= "加密方法：" . ($node->single ? $node->single_method : $user->method) . "\r\n";
+                $txt .= "路由：绕过局域网及中国大陆地址\r\n\r\n";
+                $txt .= "协议：" . ($node->single ? $node->single_protocol : $user->protocol) . "\r\n";
+                $txt .= "协议参数：" . ($node->single ? $user->port . ':' . $user->passwd : $user->protocol_param) . "\r\n";
+                $txt .= "混淆方式：" . ($node->single ? $node->single_obfs : $user->obfs) . "\r\n";
+                $txt .= "混淆参数：" . ($user->obfs_param ? $user->obfs_param : $node->obfs_param) . "\r\n";
+                $txt .= "本地端口：1080\r\n";
+
+                $node->txt = $txt;
+                $node->ssr_scheme = $ssr_scheme;
+                $node->ss_scheme = $node->compatible ? $ss_scheme : ''; // 节点兼容原版才显示
+            } else {
+                // 生成v2ray scheme
+                $v2_json = [
+                    "v"    => "2",
+                    "ps"   => $node->name,
+                    "add"  => $node->server ? $node->server : $node->ip,
+                    "port" => $node->v2_port,
+                    "id"   => $user->vmess_id,
+                    "aid"  => $node->v2_alter_id,
+                    "net"  => $node->v2_net,
+                    "type" => $node->v2_type,
+                    "host" => $node->v2_host,
+                    "path" => $node->v2_path,
+                    "tls"  => $node->v2_tls == 1 ? "tls" : ""
+                ];
+                $v2_scheme = 'vmess://' . base64url_encode(json_encode($v2_json));
+
+                // 生成文本配置信息
+                $txt = "服务器：" . ($node->server ? $node->server : $node->ip) . "\r\n";
+                if ($node->ipv6) {
+                    $txt .= "IPv6：" . $node->ipv6 . "\r\n";
+                }
+                $txt .= "端口：" . $node->v2_port . "\r\n";
+                $txt .= "用户ID：" . $user->vmess_id . "\r\n";
+                $txt .= "额外ID：" . $node->v2_alter_id . "\r\n";
+                $txt .= "传输协议：" . $node->v2_net . "\r\n";
+                $txt .= "伪装类型：" . $node->v2_type . "\r\n";
+                $txt .= $node->v2_host ? "伪装域名：" . $node->v2_host . "\r\n" : "";
+                $txt .= $node->v2_path ? "路径：" . $node->v2_path . "\r\n" : "";
+                $txt .= $node->v2_tls == 1 ? "TLS：tls\r\n" : "";
+
+                $node->txt = $txt;
+                $node->v2_scheme = $v2_scheme;
             }
-            $txt .= "远程端口：" . ($node->single ? $node->single_port : $user->port) . "\r\n";
-            $txt .= "密码：" . ($node->single ? $node->single_passwd : $user->passwd) . "\r\n";
-            $txt .= "加密方法：" . ($node->single ? $node->single_method : $user->method) . "\r\n";
-            $txt .= "路由：绕过局域网及中国大陆地址\r\n\r\n";
-            $txt .= "协议：" . ($node->single ? $node->single_protocol : $user->protocol) . "\r\n";
-            $txt .= "协议参数：" . ($node->single ? $user->port . ':' . $user->passwd : $user->protocol_param) . "\r\n";
-            $txt .= "混淆方式：" . ($node->single ? $node->single_obfs : $user->obfs) . "\r\n";
-            $txt .= "混淆参数：" . ($user->obfs_param ? $user->obfs_param : $node->obfs_param) . "\r\n";
-            $txt .= "本地端口：1080\r\n";
-
-            $node->txt = $txt;
-            $node->ssr_scheme = $ssr_scheme;
-            $node->ss_scheme = $node->compatible ? $ss_scheme : ''; // 节点兼容原版才显示
         }
 
         $view['nodeList'] = $nodeList;
@@ -1370,26 +1455,21 @@ EOF;
     // 修改个人资料
     public function profile(Request $request)
     {
-        $user = Session::get('user');
-
         if ($request->method() == 'POST') {
-            $old_password = $request->get('old_password');
-            $new_password = $request->get('new_password');
-            $old_password = md5(trim($old_password));
-            $new_password = md5(trim($new_password));
+            $old_password = trim($request->get('old_password'));
+            $new_password = trim($request->get('new_password'));
 
-            $user = User::query()->where('id', $user['id'])->first();
-            if ($user->password != $old_password) {
+            if (!Hash::check($old_password, Auth::user()->password)) {
                 Session::flash('errorMsg', '旧密码错误，请重新输入');
 
                 return Redirect::back();
-            } elseif ($user->password == $new_password) {
+            } elseif (Hash::check($new_password, Auth::user()->password)) {
                 Session::flash('errorMsg', '新密码不可与旧密码一样，请重新输入');
 
                 return Redirect::back();
             }
 
-            $ret = User::query()->where('id', $user['id'])->update(['password' => $new_password]);
+            $ret = User::query()->where('id', Auth::user()->id)->update(['password' => Hash::make($new_password)]);
             if (!$ret) {
                 Session::flash('errorMsg', '修改失败');
 
@@ -1475,18 +1555,12 @@ EOF;
         return Response::view('admin.userMonitor', $view);
     }
 
-    // 生成SS端口
+    // 生成端口
     public function makePort(Request $request)
     {
         $new_port = self::$systemConfig['is_rand_port'] ? Helpers::getRandPort() : Helpers::getOnlyPort();
         echo $new_port;
         exit;
-    }
-
-    // 生成SS密码
-    public function makePasswd(Request $request)
-    {
-        exit(makeRandStr());
     }
 
     // 加密方式、混淆、协议、等级、国家地区
@@ -1666,8 +1740,8 @@ EOF;
     // 添加等级
     public function addLevel(Request $request)
     {
-        $level = $request->get('level');
-        $level_name = $request->get('level_name');
+        $level = intval($request->get('level'));
+        $level_name = trim($request->get('level_name'));
 
         if (empty($level)) {
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '等级不能为空']);
@@ -1682,12 +1756,12 @@ EOF;
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '该等级已存在，请勿重复添加']);
         }
 
-        $level = new Level();
-        $level->level = $level;
-        $level->level_name = $level_name;
-        $level->save();
+        $obj = new Level();
+        $obj->level = $level;
+        $obj->level_name = $level_name;
+        $obj->save();
 
-        if ($level->id) {
+        if ($obj->id) {
             return Response::json(['status' => 'success', 'data' => '', 'message' => '提交成功']);
         } else {
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '操作失败']);
@@ -1730,12 +1804,9 @@ EOF;
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '该等级下存在关联账号，请先取消关联']);
         }
 
-        $ret = Level::query()->where('id', $id)->update(['level' => $level, 'level_name' => $level_name]);
-        if ($ret) {
-            return Response::json(['status' => 'success', 'data' => '', 'message' => '操作成功']);
-        } else {
-            return Response::json(['status' => 'fail', 'data' => '', 'message' => '操作失败']);
-        }
+        Level::query()->where('id', $id)->update(['level' => $level, 'level_name' => $level_name]);
+
+        return Response::json(['status' => 'success', 'data' => '', 'message' => '操作成功']);
     }
 
     // 删除等级
@@ -1791,12 +1862,12 @@ EOF;
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '该国家/地区名称已存在，请勿重复添加']);
         }
 
-        $country = new Country();
-        $country->country_name = $country_name;
-        $country->country_code = $country_code;
-        $country->save();
+        $obj = new Country();
+        $obj->country_name = $country_name;
+        $obj->country_code = $country_code;
+        $obj->save();
 
-        if ($country->id) {
+        if ($obj->id) {
             return Response::json(['status' => 'success', 'data' => '', 'message' => '提交成功']);
         } else {
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '操作失败']);
@@ -1913,21 +1984,20 @@ EOF;
             }
         }
 
+        // 如果更改了有赞云任何一个配置，则删除有赞云的授权缓存，防止出现client_id错误
+        if (in_array($name, ['youzan_client_id', 'youzan_client_secret', 'kdt_id'])) {
+            \Cache::forget('YZY_TOKEN');
+        }
+
+        // 如果是返利比例，则需要除100
+        if (in_array($name, ['referral_percent'])) {
+            $value = intval($value) / 100;
+        }
+
         // 更新配置
         Config::query()->where('name', $name)->update(['value' => $value]);
 
         return Response::json(['status' => 'success', 'data' => '', 'message' => '操作成功']);
-    }
-
-    // 设置返利比例
-    public function setReferralPercent(Request $request)
-    {
-        $value = intval($request->get('value'));
-        $value = $value / 100;
-
-        Config::query()->where('name', 'referral_percent')->update(['value' => $value]);
-
-        return Response::json(['status' => 'success', 'data' => '', 'message' => '设置成功']);
     }
 
     // 邀请码列表
@@ -2173,7 +2243,7 @@ EOF;
     {
         $username = trim($request->get('username'));
 
-        $query = UserTrafficModifyLog::query()->with(['user', 'order'])->orderBy('id', 'desc');
+        $query = UserTrafficModifyLog::query()->with(['user', 'order', 'order.goods'])->orderBy('id', 'desc');
 
         if ($username) {
             $query->whereHas('user', function ($q) use ($username) {
@@ -2226,9 +2296,9 @@ EOF;
             return Response::json(['status' => 'fail', 'data' => '', 'message' => "用户不存在"]);
         }
 
-        // 存储当前管理员身份信息，并将当前登录信息改成要切换的用户的身份信息
-        Session::put('admin', Session::get("user"));
-        Session::put('user', $user->toArray());
+        // 存储当前管理员ID，并将当前登录信息改成要切换的用户的身份信息
+        Session::put('admin', Auth::user()->id);
+        Auth::login($user);
 
         return Response::json(['status' => 'success', 'data' => '', 'message' => "身份切换成功"]);
     }
@@ -2302,6 +2372,30 @@ EOF;
             DB::rollBack();
 
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '删除失败：' . $e->getMessage()]);
+        }
+    }
+
+    // 邮件发送日志列表
+    public function emailLog(Request $request)
+    {
+        $view['list'] = EmailLog::query()->orderBy('id', 'desc')->paginate(15);
+
+        return Response::view('admin.emailLog', $view);
+    }
+
+    // 生成用户标签
+    private function makeUserLabels($userId, $labels = [])
+    {
+        if (!empty($labels)) {
+            // 先删除该用户所有的标签
+            UserLabel::query()->where('user_id', $userId)->delete();
+
+            foreach ($labels as $label) {
+                $userLabel = new UserLabel();
+                $userLabel->user_id = $userId;
+                $userLabel->label_id = $label;
+                $userLabel->save();
+            }
         }
     }
 }

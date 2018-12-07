@@ -10,6 +10,7 @@ return [
     'username_placeholder'            => '請輸入用戶名',
     'system_down'                     => '系統維護中',
     'subscribe_baned'                 => '您的訂閱功能被暫時禁用，請聯系管理員恢復',
+    'download'                        => '下載',
 
     // 菜单
     'home'                            => '個人中心',
@@ -38,6 +39,7 @@ return [
     'account_total_traffic'           => '共計',
     'account_usage_traffic'           => '已使用',
     'account_reset_notice'            => '每月 :reset_day 日重置',
+    'account_login_log'               => '登錄日誌',
     'article_title'                   => '文章',
     'recharge'                        => '充值',
     'enabled'                         => '正常',

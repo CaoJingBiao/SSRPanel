@@ -1,9 +1,6 @@
 @extends('user.layouts')
-
 @section('css')
-
 @endsection
-@section('title', trans('home.panel'))
 @section('content')
     <!-- BEGIN CONTENT BODY -->
     <div class="page-content" style="padding-top:0;">
@@ -54,9 +51,8 @@
     <!-- END CONTENT BODY -->
 @endsection
 @section('script')
-    <script src="/js/layer/layer.js" type="text/javascript"></script>
     <script type="text/javascript">
-        // 每2秒查询一次订单状态
+        // 每800毫秒查询一次订单状态
         $(document).ready(function(){
             setInterval("getStatus()", 800);
         });
