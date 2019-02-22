@@ -8,6 +8,7 @@ use App\Http\Models\EmailLog;
 use App\Http\Models\Level;
 use App\Http\Models\SsConfig;
 use App\Http\Models\User;
+use App\Http\Models\UserSubscribe;
 use App\Http\Models\UserTrafficModifyLog;
 
 class Helpers
@@ -109,6 +110,17 @@ class Helpers
         return Level::query()->get()->sortBy('level');
     }
 
+    // 生成用户的订阅码
+    public static function makeSubscribeCode()
+    {
+        $code = makeRandStr(5);
+        if (UserSubscribe::query()->where('code', $code)->exists()) {
+            $code = self::makeSubscribeCode();
+        }
+
+        return $code;
+    }
+
     /**
      * 添加邮件投递日志
      *
@@ -129,33 +141,9 @@ class Helpers
         $log->content = $content;
         $log->status = $status;
         $log->error = $error;
-        $log->created_at = date('Y-m-d H:i:s');
+        $log->save();
 
-        return $log->save();
-    }
-
-    /**
-     * 添加serverChan投递日志
-     *
-     * @param string $title   标题
-     * @param string $content 内容
-     * @param int    $status  投递状态
-     * @param string $error   投递失败时记录的异常信息
-     *
-     * @return int
-     */
-    public static function addServerChanLog($title, $content, $status = 1, $error = '')
-    {
-        $log = new EmailLog();
-        $log->type = 2;
-        $log->address = 'admin';
-        $log->title = $title;
-        $log->content = $content;
-        $log->status = $status;
-        $log->error = $error;
-        $log->created_at = date('Y-m-d H:i:s');
-
-        return $log->save();
+        return $log->id;
     }
 
     /**

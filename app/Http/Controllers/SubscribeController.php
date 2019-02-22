@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Components\Helpers;
+use App\Http\Models\Device;
 use App\Http\Models\SsGroup;
 use App\Http\Models\SsNode;
 use App\Http\Models\User;
@@ -11,6 +12,7 @@ use App\Http\Models\UserSubscribe;
 use App\Http\Models\UserSubscribeLog;
 use Illuminate\Http\Request;
 use Redirect;
+use Response;
 
 /**
  * 订阅控制器
@@ -28,20 +30,113 @@ class SubscribeController extends Controller
         self::$systemConfig = Helpers::systemConfig();
     }
 
-    // 获取订阅信息
-    public function index(Request $request, $code)
+    // 订阅码列表
+    public function subscribeList(Request $request)
+    {
+        $user_id = $request->get('user_id');
+        $username = $request->get('username');
+        $status = $request->get('status');
+
+        $query = UserSubscribe::with(['User']);
+
+        if (!empty($user_id)) {
+            $query->where('user_id', $user_id);
+        }
+
+        if (!empty($username)) {
+            $query->whereHas('user', function ($q) use ($username) {
+                $q->where('username', 'like', '%' . $username . '%');
+            });
+        }
+
+        if ($status != '') {
+            $query->where('status', intval($status));
+        }
+
+        $view['subscribeList'] = $query->orderBy('id', 'desc')->paginate(20)->appends($request->except('page'));
+
+        return Response::view('subscribe.subscribeList', $view);
+    }
+
+    // 订阅设备列表
+    public function deviceList(Request $request)
+    {
+        $type = intval($request->get('type'));
+        $platform = intval($request->get('platform'));
+        $name = trim($request->get('name'));
+        $status = intval($request->get('status'));
+
+        $query = Device::query();
+
+        if (!empty($type)) {
+            $query->where('type', $type);
+        }
+
+        if ($platform != '') {
+            $query->where('platform', $platform);
+        }
+
+        if (!empty($name)) {
+            $query->where('name', 'like', '%' . $name . '%');
+        }
+
+        if ($status != '') {
+            $query->where('status', $status);
+        }
+
+        $view['deviceList'] = $query->paginate(20)->appends($request->except('page'));
+
+        return Response::view('subscribe.deviceList', $view);
+    }
+
+    // 设置用户的订阅的状态
+    public function setSubscribeStatus(Request $request)
+    {
+        $id = $request->get('id');
+        $status = $request->get('status', 0);
+
+        if (empty($id)) {
+            return Response::json(['status' => 'fail', 'data' => '', 'message' => '操作异常']);
+        }
+
+        if ($status) {
+            UserSubscribe::query()->where('id', $id)->update(['status' => 1, 'ban_time' => 0, 'ban_desc' => '']);
+        } else {
+            UserSubscribe::query()->where('id', $id)->update(['status' => 0, 'ban_time' => time(), 'ban_desc' => '后台手动封禁']);
+        }
+
+        return Response::json(['status' => 'success', 'data' => '', 'message' => '操作成功']);
+    }
+
+    // 设置设备是否允许订阅的状态
+    public function setDeviceStatus(Request $request)
+    {
+        $id = intval($request->get('id'));
+        $status = intval($request->get('status', 0));
+
+        if (empty($id)) {
+            return Response::json(['status' => 'fail', 'data' => '', 'message' => '操作异常']);
+        }
+
+        Device::query()->where('id', $id)->update(['status' => $status]);
+
+        return Response::json(['status' => 'success', 'data' => '', 'message' => '操作成功']);
+    }
+
+    // 通过订阅码获取订阅信息
+    public function getSubscribeByCode(Request $request, $code)
     {
         if (empty($code)) {
             return Redirect::to('login');
         }
 
         // 校验合法性
-        $subscribe = UserSubscribe::query()->with('user')->where('code', $code)->where('status', 1)->first();
+        $subscribe = UserSubscribe::query()->with('user')->where('status', 1)->where('code', $code)->first();
         if (!$subscribe) {
             exit($this->noneNode());
         }
 
-        $user = User::query()->where('id', $subscribe->user_id)->whereIn('status', [0, 1])->where('enable', 1)->first();
+        $user = User::query()->whereIn('status', [0, 1])->where('enable', 1)->where('id', $subscribe->user_id)->first();
         if (!$user) {
             exit($this->noneNode());
         }
@@ -65,23 +160,14 @@ class SubscribeController extends Controller
             $query->where('ss_node.type', 1);
         }
 
-        $nodeList = $query->where('ss_node.status', 1)
-            ->where('ss_node.is_subscribe', 1)
-            ->whereIn('ss_node_label.label_id', $userLabelIds)
-            ->groupBy('ss_node.id')
-            ->orderBy('ss_node.sort', 'desc')
-            ->orderBy('ss_node.id', 'asc')
-            ->get()
-            ->toArray();
+        $nodeList = $query->where('ss_node.status', 1)->where('ss_node.is_subscribe', 1)->whereIn('ss_node_label.label_id', $userLabelIds)->groupBy('ss_node.id')->orderBy('ss_node.sort', 'desc')->orderBy('ss_node.id', 'asc')->get()->toArray();
         if (empty($nodeList)) {
             exit($this->noneNode());
         }
 
         // 打乱数组
         if (self::$systemConfig['rand_subscribe']) {
-            if (self::$systemConfig['subscribe_max']) {
-                shuffle($nodeList);
-            }
+            shuffle($nodeList);
         }
 
         // 控制客户端最多获取节点数
@@ -113,7 +199,7 @@ class SubscribeController extends Controller
                 $ssr_str .= '/?obfsparam=' . base64url_encode($obfs_param);
                 $ssr_str .= '&protoparam=' . ($node['single'] ? base64url_encode($user->port . ':' . $user->passwd) : base64url_encode($protocol_param));
                 $ssr_str .= '&remarks=' . base64url_encode($node['name']);
-                $ssr_str .= '&group=' . base64url_encode(empty($group) ? '' : $group->name);
+                $ssr_str .= '&group=' . base64url_encode(empty($group) ? '默认' : $group->name);
                 $ssr_str .= '&udpport=0';
                 $ssr_str .= '&uot=0';
                 $ssr_str = base64url_encode($ssr_str);
@@ -131,7 +217,7 @@ class SubscribeController extends Controller
                     "type" => $node['v2_type'],
                     "host" => $node['v2_host'],
                     "path" => $node['v2_path'],
-                    "tls"  => $node['v2_tls'] == 1 ? "tls" : ""
+                    "tls"  => $node['v2_tls'] ? "tls" : ""
                 ];
 
                 $scheme .= 'vmess://' . base64url_encode(json_encode($v2_json)) . "\n";
@@ -155,7 +241,7 @@ class SubscribeController extends Controller
     // 抛出无可用的节点信息，用于兼容防止客户端订阅失败
     private function noneNode()
     {
-        return base64url_encode('ssr://' . base64url_encode('8.8.8.8:8888:origin:none:plain:' . base64url_encode('0000') . '/?obfsparam=&protoparam=&remarks=' . base64url_encode('无可用节点或账号被封禁或订阅被封禁') . '&group=' . base64url_encode('VPN') . '&udpport=0&uot=0') . "\n");
+        return base64url_encode('ssr://' . base64url_encode('1.1.1.1:8888:origin:none:plain:' . base64url_encode('0000') . '/?obfsparam=&protoparam=&remarks=' . base64url_encode('无可用节点或账号被封禁或订阅被封禁') . '&group=' . base64url_encode('错误') . '&udpport=0&uot=0') . "\n");
     }
 
     /**

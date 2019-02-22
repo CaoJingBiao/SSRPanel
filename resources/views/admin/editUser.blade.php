@@ -217,9 +217,9 @@
                                             </div>
                                             <hr>
                                             <div class="form-group">
-                                                <label for="speed_limit_per_user" class="col-md-3 control-label">邀请人</label>
+                                                <label for="referral_uid" class="col-md-3 control-label">邀请人</label>
                                                 <div class="col-md-8">
-                                                    <p class="form-control-static"> {{$user->referral ? $user->referral->username : '无邀请人'}} </p>
+                                                    <p class="form-control-static"> {{empty($user->referral) ? '无邀请人' : $user->referral->username}} </p>
                                                 </div>
                                             </div>
                                         </div>
@@ -270,7 +270,7 @@
                                                 <div class="col-md-8">
                                                     <div class="input-group">
                                                         <input type="text" class="form-control" name="transfer_enable" value="{{$user->transfer_enable}}" id="transfer_enable" autocomplete="off" required>
-                                                        <span class="input-group-addon">GiB</span>
+                                                        <span class="input-group-addon">GB</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -327,23 +327,25 @@
                                                 <label for="speed_limit_per_con" class="col-md-3 control-label">单连接限速</label>
                                                 <div class="col-md-8">
                                                     <div class="input-group">
-                                                        <input type="text" class="form-control" name="speed_limit_per_con" value="{{$user->speed_limit_per_con}}" id="speed_limit_per_con" autocomplete="off" disabled>
-                                                        <span class="input-group-addon">KB</span>
+                                                        <input type="text" class="form-control" name="speed_limit_per_con" value="{{$user->speed_limit_per_con}}" id="speed_limit_per_con" autocomplete="off">
+                                                        <span class="input-group-addon">Byte</span>
                                                     </div>
+                                                    <span class="help-block"> 为 0 时不限速 </span>
                                                 </div>
                                             </div>
                                             <div class="form-group">
                                                 <label for="speed_limit_per_user" class="col-md-3 control-label">单用户限速</label>
                                                 <div class="col-md-8">
                                                     <div class="input-group">
-                                                        <input type="text" class="form-control" name="speed_limit_per_user" value="{{$user->speed_limit_per_user}}" id="speed_limit_per_user" autocomplete="off" disabled>
-                                                        <span class="input-group-addon">KB</span>
+                                                        <input type="text" class="form-control" name="speed_limit_per_user" value="{{$user->speed_limit_per_user}}" id="speed_limit_per_user" autocomplete="off">
+                                                        <span class="input-group-addon">Byte</span>
                                                     </div>
+                                                    <span class="help-block"> 为 0 时不限速 </span>
                                                 </div>
                                             </div>
                                             <hr>
                                             <div class="form-group">
-                                                <label for="vmess_id" class="col-md-3 control-label">VMess用户ID</label>
+                                                <label for="vmess_id" class="col-md-3 control-label">VMess UUID</label>
                                                 <div class="col-md-8">
                                                     <div class="input-group">
                                                         <input class="form-control" type="text" name="vmess_id" value="{{$user->vmess_id}}" id="vmess_id" autocomplete="off" />
@@ -351,11 +353,11 @@
                                                             <button class="btn btn-success" type="button" onclick="makeVmessId()"> <i class="fa fa-refresh"></i> </button>
                                                         </span>
                                                     </div>
+                                                    <span class="help-block"> V2Ray的账户ID </span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <!-- END SAMPLE FORM PORTLET-->
                                 </div>
                             </div>
                         </div>

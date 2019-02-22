@@ -3,12 +3,14 @@
 namespace App\Console\Commands;
 
 use App\Components\Helpers;
+use App\Components\ServerChan;
 use App\Components\Yzy;
 use App\Http\Models\Goods;
 use App\Http\Models\GoodsLabel;
 use App\Http\Models\ReferralLog;
 use App\Http\Models\SsNode;
 use App\Http\Models\SsNodeLabel;
+use App\Http\Models\Ticket;
 use App\Http\Models\UserBalanceLog;
 use App\Http\Models\VerifyCode;
 use App\Mail\sendUserInfo;
@@ -72,6 +74,9 @@ class AutoJob extends Command
 
         // 关闭超时未支付订单
         $this->closeOrders();
+
+        // 关闭超过72小时未处理的工单
+        $this->closeTickets();
 
         $jobEndTime = microtime(true);
         $jobUsedTime = round(($jobEndTime - $jobStartTime), 4);
@@ -180,6 +185,11 @@ class AutoJob extends Command
             $userList = User::query()->where('status', '>=', 0)->where('enable', 1)->where('ban_time', 0)->get();
             if (!$userList->isEmpty()) {
                 foreach ($userList as $user) {
+                    // 对管理员豁免
+                    if ($user->is_admin) {
+                        continue;
+                    }
+
                     // 多往前取5分钟，防止数据统计任务执行时间过长导致没有数据
                     $totalTraffic = UserTrafficHourly::query()->where('user_id', $user->id)->where('node_id', 0)->where('created_at', '>=', date('Y-m-d H:i:s', time() - 3900))->sum('total');
                     if ($totalTraffic >= (self::$systemConfig['traffic_ban_value'] * 1024 * 1024 * 1024)) {
@@ -328,7 +338,7 @@ class AutoJob extends Command
                         }
 
                         // 更新支付单
-                        $payment->pay_way = $trade['response']['qr_trades']['pay_type'] == 'WXPAY_BIGUNSIGN' ? 1 : 2; // 1-微信、2-支付宝
+                        $payment->pay_way = $trade['response']['pay_type'] == 'WXPAY_BIGUNSIGN' ? 1 : 2; // 1-微信、2-支付宝
                         $payment->status = 1;
                         $payment->save();
 
@@ -373,15 +383,15 @@ class AutoJob extends Command
                                 }
                             }
 
-                            // 把商品的流量加到账号上
-                            User::query()->where('id', $order->user_id)->increment('transfer_enable', $goods->traffic * 1048576);
-
                             // 计算账号过期时间
                             if ($order->user->expire_time < date('Y-m-d', strtotime("+" . $goods->days . " days"))) {
                                 $expireTime = date('Y-m-d', strtotime("+" . $goods->days . " days"));
                             } else {
                                 $expireTime = $order->user->expire_time;
                             }
+
+                            // 把商品的流量加到账号上
+                            User::query()->where('id', $order->user_id)->increment('transfer_enable', $goods->traffic * 1048576);
 
                             // 套餐就改流量重置日，流量包不改
                             if ($goods->type == 2) {
@@ -462,12 +472,8 @@ class AutoJob extends Command
                             $nodeList = SsNode::query()->whereIn('id', $nodeIds)->orderBy('sort', 'desc')->orderBy('id', 'desc')->get()->toArray();
                             $content['serverList'] = $nodeList;
 
-                            try {
-                                Mail::to($order->email)->send(new sendUserInfo($content));
-                                Helpers::addEmailLog($order->email, $title, json_encode($content));
-                            } catch (\Exception $e) {
-                                Helpers::addEmailLog($order->email, $title, json_encode($content), 0, $e->getMessage());
-                            }
+                            $logId = Helpers::addEmailLog($order->email, $title, json_encode($content));
+                            Mail::to($order->email)->send(new sendUserInfo($logId, $content));
                         }
 
                         DB::commit();
@@ -509,6 +515,18 @@ class AutoJob extends Command
                 Log::info('【异常】自动关闭超时未支付订单：' . $e);
 
                 DB::rollBack();
+            }
+        }
+    }
+
+    // 关闭超过72小时未处理的工单
+    private function closeTickets()
+    {
+        $ticketList = Ticket::query()->where('updated_at', '<=', date('Y-m-d H:i:s', strtotime("-72 hours")))->where('status', 1)->get();
+        foreach ($ticketList as $ticket) {
+            $ret = Ticket::query()->where('id', $ticket->id)->update(['status' => 2]);
+            if ($ret) {
+                ServerChan::send('工单关闭提醒', '工单：ID' . $ticket->id . '超过72小时未处理，系统已自动关闭');
             }
         }
     }

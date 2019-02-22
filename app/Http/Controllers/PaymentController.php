@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Components\Helpers;
 use App\Components\Yzy;
-use App\Components\Trimepay;
 use App\Components\AlipaySubmit;
 use App\Http\Models\Coupon;
 use App\Http\Models\Goods;
@@ -12,6 +11,7 @@ use App\Http\Models\Order;
 use App\Http\Models\Payment;
 use App\Http\Models\PaymentCallback;
 use Illuminate\Http\Request;
+use Payment\Client\Charge;
 use Response;
 use Redirect;
 use Log;
@@ -39,7 +39,6 @@ class PaymentController extends Controller
     {
         $goods_id = intval($request->get('goods_id'));
         $coupon_sn = $request->get('coupon_sn');
-        $pay_type = $request->get('pay_type');
 
         $goods = Goods::query()->where('is_del', 0)->where('status', 1)->where('id', $goods_id)->first();
         if (!$goods) {
@@ -47,7 +46,7 @@ class PaymentController extends Controller
         }
 
         // 判断是否开启有赞云支付
-        if (!self::$systemConfig['is_youzan'] && !self::$systemConfig['is_trimepay'] && !self::$systemConfig['is_alipay']) {
+        if (!self::$systemConfig['is_youzan'] && !self::$systemConfig['is_alipay'] && !self::$systemConfig['is_f2fpay']) {
             return Response::json(['status' => 'fail', 'data' => '', 'message' => '创建支付单失败：系统并未开启在线支付功能']);
         }
 
@@ -122,10 +121,10 @@ class PaymentController extends Controller
             // 支付方式
             if (self::$systemConfig['is_youzan']) {
                 $pay_way = 2;
-            } elseif (self::$systemConfig['is_trimepay']) {
-                $pay_way = 3;
             } elseif (self::$systemConfig['is_alipay']) {
                 $pay_way = 4;
+            } elseif (self::$systemConfig['is_f2fpay']) {
+                $pay_way = 5;
             }
 
             // 生成订单
@@ -151,39 +150,44 @@ class PaymentController extends Controller
 
                     throw new \Exception($result['error_response']['msg']);
                 }
-            } elseif (self::$systemConfig['is_trimepay']) {
-                $trimepay = new Trimepay(self::$systemConfig['trimepay_appid'], self::$systemConfig['trimepay_appsecret']);
-
-                if ($pay_type == 1) {
-                    $payMethod = 'ALIPAY_QR';
-                } elseif ($pay_type == 2) {
-                    $payMethod = 'WEPAY_QR';
-                }
-
-                $result = $trimepay->pay($payMethod, $orderSn, $amount, self::$systemConfig['website_url'] . '/api/trimepay', self::$systemConfig['website_url']);
-                if ($result['code'] !== 0) {
-                    Log::error('【Trimepay】创建二维码失败：' . $result['msg']);
-
-                    throw new \Exception($result['msg']);
-                }
             } elseif (self::$systemConfig['is_alipay']) {
                 $parameter = [
                     "service"        => "create_forex_trade", // WAP:create_forex_trade_wap ,即时到帐:create_forex_trade
                     "partner"        => self::$systemConfig['alipay_partner'],
                     "notify_url"     => self::$systemConfig['website_url'] . "/api/alipay", // 异步回调接口
                     "return_url"     => self::$systemConfig['website_url'],
-                    "out_trade_no"   => $orderSn, // 订单号
+                    "out_trade_no"   => $orderSn,  // 订单号
                     "subject"        => "Package", // 订单名称
-                    "total_fee"      => $amount, // 金额
-                    "body"           => "", // 商品描述，可为空
-                    "currency"       => self::$systemConfig['alipay_currency'], // 币种
+                    //"total_fee"      => $amount, // 金额
+                    "rmb_fee"        => $amount,   // 使用RMB标价，不再使用总金额
+                    "body"           => "",        // 商品描述，可为空
+                    "currency"       => self::$systemConfig['alipay_currency'], // 结算币种
                     "product_code"   => "NEW_OVERSEAS_SELLER",
                     "_input_charset" => "utf-8"
                 ];
-		
+
                 // 建立请求
                 $alipaySubmit = new AlipaySubmit(self::$systemConfig['alipay_sign_type'], self::$systemConfig['alipay_partner'], self::$systemConfig['alipay_key'], self::$systemConfig['alipay_private_key']);
                 $result = $alipaySubmit->buildRequestForm($parameter, "post", "确认");
+            } elseif (self::$systemConfig['is_f2fpay']) {
+                // TODO：goods表里增加一个字段用于自定义商品付款时展示的商品名称，
+                // TODO：这里增加一个随机商品列表，根据goods的价格随机取值
+                $result = Charge::run("ali_qr", [
+                    'use_sandbox'     => false,
+                    "partner"         => self::$systemConfig['f2fpay_app_id'],
+                    'app_id'          => self::$systemConfig['f2fpay_app_id'],
+                    'sign_type'       => 'RSA2',
+                    'ali_public_key'  => self::$systemConfig['f2fpay_public_key'],
+                    'rsa_private_key' => self::$systemConfig['f2fpay_private_key'],
+                    'notify_url'      => self::$systemConfig['website_url'] . "/api/f2fpay", // 异步回调接口
+                    'return_url'      => self::$systemConfig['website_url'],
+                    'return_raw'      => false
+                ], [
+                    'body'     => '',
+                    'subject'  => '银鹭牛奶花生复合蛋白饮品（CAN370g）', // TODO：改为生成随机零售商品，比如：银鹭牛奶花生复合蛋白饮品（CAN370g）、晋江牛肉馆 - 外卖订单
+                    'order_no' => $orderSn,
+                    'amount'   => $amount,
+                ]);
             }
 
             $payment = new Payment();
@@ -198,12 +202,12 @@ class PaymentController extends Controller
                 $payment->qr_url = $result['response']['qr_url'];
                 $payment->qr_code = $result['response']['qr_code'];
                 $payment->qr_local_url = $this->base64ImageSaver($result['response']['qr_code']);
-            } elseif (self::$systemConfig['is_trimepay']) {
-                $payment->qr_url = $result['data'];
-                $payment->qr_code = 'https://www.zhihu.com/qrcode?url=' . $result['data'];
-                $payment->qr_local_url = 'https://www.zhihu.com/qrcode?url=' . $result['data'];
             } elseif (self::$systemConfig['is_alipay']) {
                 $payment->qr_code = $result;
+            } elseif (self::$systemConfig['is_f2fpay']) {
+                $payment->qr_code = $result;
+                $payment->qr_url = 'http://qr.liantu.com/api.php?text=' . $result . '&bg=ffffff&fg=1eabfc&pt=1c73bd&m=0&w=400&el=1&inpt=1eabfc';
+                $payment->qr_local_url = $payment->qr_url;
             }
             $payment->status = 0;
             $payment->save();
@@ -219,6 +223,7 @@ class PaymentController extends Controller
             }
 
             DB::commit();
+
             if (self::$systemConfig['is_alipay']) {
                 // Alipay返回支付信息
                 return Response::json(['status' => 'success', 'data' => $result, 'message' => '创建订单成功，正在转到付款页面，请稍后']);
@@ -258,6 +263,8 @@ class PaymentController extends Controller
         $view['website_analytics'] = self::$systemConfig['website_analytics'];
         $view['website_customer_service'] = self::$systemConfig['website_customer_service'];
         $view['is_alipay'] = self::$systemConfig['is_alipay'];
+        $view['is_f2fpay'] = self::$systemConfig['is_f2fpay'];
+        $view['is_youzan'] = self::$systemConfig['is_youzan'];
 
         return Response::view('payment.detail', $view);
     }

@@ -154,7 +154,7 @@
                         <span class="title">文章管理</span>
                     </a>
                 </li>
-                <li class="nav-item {{in_array(Request::path(), ['admin/userList', 'admin/addUser', 'admin/editUser', 'admin/userOrderList', 'admin/userBalanceLogList', 'admin/userTrafficLogList', 'admin/userRebateList', 'admin/userBanLogList', 'admin/export', 'admin/userMonitor', 'admin/subscribeLog']) ? 'active open' : ''}}">
+                <li class="nav-item {{in_array(Request::path(), ['admin/userList', 'admin/addUser', 'admin/editUser', 'admin/userOrderList', 'admin/userBalanceLogList', 'admin/userTrafficLogList', 'admin/userRebateList', 'admin/userBanLogList', 'admin/export', 'admin/userMonitor', 'admin/subscribeLog', 'admin/userOnlineIPList', 'admin/onlineIPMonitor']) ? 'active open' : ''}}">
                     <a href="javascript:;" class="nav-link nav-toggle">
                         <i class="fa fa-users"></i>
                         <span class="title">用户管理</span>
@@ -167,10 +167,16 @@
                                 <span class="title">用户列表</span>
                             </a>
                         </li>
-                        <li class="nav-item {{in_array(Request::path(), ['admin/subscribeLog']) ? 'active open' : ''}}">
-                            <a href="{{url('admin/subscribeLog')}}" class="nav-link">
+                        <li class="nav-item {{in_array(Request::path(), ['admin/userOnlineIPList']) ? 'active open' : ''}}">
+                            <a href="{{url('admin/userOnlineIPList')}}" class="nav-link">
                                 <i class="icon-list"></i>
-                                <span class="title">订阅管理</span>
+                                <span class="title">用户在线IP</span>
+                            </a>
+                        </li>
+                        <li class="nav-item {{in_array(Request::path(), ['admin/onlineIPMonitor']) ? 'active open' : ''}}">
+                            <a href="{{url('admin/onlineIPMonitor')}}" class="nav-link">
+                                <i class="icon-list"></i>
+                                <span class="title">在线IP监控</span>
                             </a>
                         </li>
                         <li class="nav-item {{in_array(Request::path(), ['admin/userBalanceLogList']) ? 'active open' : ''}}">
@@ -181,7 +187,7 @@
                         </li>
                         <li class="nav-item {{in_array(Request::path(), ['admin/userTrafficLogList']) ? 'active open' : ''}}">
                             <a href="{{url('admin/userTrafficLogList')}}" class="nav-link ">
-                                <i class="fa fa-bar-chart"></i>
+                                <i class="fa fa-area-chart"></i>
                                 <span class="title">流量变动记录</span>
                             </a>
                         </li>
@@ -195,6 +201,27 @@
                             <a href="{{url('admin/userBanLogList')}}" class="nav-link ">
                                 <i class="fa fa-user-times"></i>
                                 <span class="title">用户封禁记录</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item {{in_array(Request::path(), ['subscribe/subscribeList', 'subscribe/deviceList']) ? 'active open' : ''}}">
+                    <a href="javascript:;" class="nav-link nav-toggle">
+                        <i class="fa fa-list-alt"></i>
+                        <span class="title">订阅管理</span>
+                        <span class="arrow"></span>
+                    </a>
+                    <ul class="sub-menu">
+                        <li class="nav-item {{in_array(Request::path(), ['subscribe/subscribeList']) ? 'active open' : ''}}">
+                            <a href="{{url('subscribe/subscribeList')}}" class="nav-link">
+                                <i class="icon-list"></i>
+                                <span class="title">订阅码列表</span>
+                            </a>
+                        </li>
+                        <li class="nav-item {{in_array(Request::path(), ['subscribe/deviceList']) ? 'active open' : ''}}">
+                            <a href="{{url('subscribe/deviceList')}}" class="nav-link ">
+                                <i class="fa fa-list"></i>
+                                <span class="title">订阅设备列表</span>
                             </a>
                         </li>
                     </ul>
@@ -268,7 +295,7 @@
                         </li>
                         <li class="nav-item {{in_array(Request::path(), ['admin/trafficLog']) ? 'active open' : ''}}">
                             <a href="{{url('admin/trafficLog')}}" class="nav-link">
-                                <i class="fa fa-bar-chart"></i>
+                                <i class="fa fa-area-chart"></i>
                                 <span class="title">流量日志</span>
                             </a>
                         </li>
@@ -276,6 +303,12 @@
                             <a href="{{url('admin/analysis')}}" class="nav-link">
                                 <i class="fa fa-bar-chart"></i>
                                 <span class="title">日志分析</span>
+                            </a>
+                        </li>
+                        <li class="nav-item {{in_array(Request::path(), ['sensitiveWords/list', 'sensitiveWords/add']) ? 'active open' : ''}}">
+                            <a href="{{url('sensitiveWords/list')}}" class="nav-link">
+                                <i class="fa fa-font"></i>
+                                <span class="title">敏感词管理</span>
                             </a>
                         </li>
                         <li class="nav-item {{in_array(Request::path(), ['admin/emailLog']) ? 'active open' : ''}}">
@@ -287,19 +320,13 @@
                         <li class="nav-item {{in_array(Request::path(), ['payment/callbackList']) ? 'active open' : ''}}">
                             <a href="{{url('payment/callbackList')}}" class="nav-link">
                                 <i class="fa fa-th"></i>
-                                <span class="title">有赞回调日志</span>
-                            </a>
-                        </li>
-                        <li class="nav-item {{in_array(Request::path(), ['sensitiveWords/list', 'sensitiveWords/add']) ? 'active open' : ''}}">
-                            <a href="{{url('sensitiveWords/list')}}" class="nav-link">
-                                <i class="fa fa-font"></i>
-                                <span class="title">敏感词管理</span>
+                                <span class="title">支付回调日志</span>
                             </a>
                         </li>
                         <li class="nav-item {{in_array(Request::path(), ['logs']) ? 'active open' : ''}}">
                             <a href="{{url('logs')}}" class="nav-link" target="_blank">
                                 <i class="fa fa-cubes"></i>
-                                <span class="title">系统日志</span>
+                                <span class="title">系统运行日志</span>
                             </a>
                         </li>
                     </ul>

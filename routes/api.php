@@ -1,10 +1,9 @@
 <?php
 
 Route::group(['namespace' => 'Api'], function () {
-    Route::any('yzy/create', 'YzyController@create');
     Route::resource('yzy', 'YzyController');
-    Route::resource('trimepay', 'TrimepayController');
-	Route::resource('alipay', 'AlipayController');
+    Route::resource('alipay', 'AlipayController');
+    Route::resource('f2fpay', 'F2fpayController');
 
     // 定制客户端
     Route::any('login', 'LoginController@login');

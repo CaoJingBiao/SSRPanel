@@ -11,8 +11,8 @@
             <div class="col-md-12">
                 <div class="note note-info">
                     <p>节点绑定域名推荐使用<a href="https://www.namesilo.com/?rid=326ec20pa" target="_blank">Namesilo</a>，本面板支持自动更新DNS <a href="https://github.com/ssrpanel/SSRPanel/wiki/%E8%B4%AD%E4%B9%B0%E5%9F%9F%E5%90%8D%EF%BC%88%E8%87%AA%E5%B8%A6%E9%9A%90%E7%A7%81%E4%BF%9D%E6%8A%A4%EF%BC%89" target="_blank" style="color:red;">[购买域名]</a></p>
-                    <p>状态显示为'宕机'：1.SSR(R)进程挂掉；2.服务器真的宕机。<a href="https://github.com/ssrpanel/ssrpanel/wiki/VPS%E6%8E%A8%E8%8D%90&%E8%B4%AD%E4%B9%B0%E7%BB%8F%E9%AA%8C" target="_blank" style="color:red;">[VPS推荐]</a></p>
-                    <p>请务必检查各节点服务器的时间是否同步。<a href="https://github.com/ssrpanel/SSRPanel/wiki/%E5%8D%95%E7%AB%AF%E5%8F%A3%E5%A4%9A%E7%94%A8%E6%88%B7%E7%9A%84%E5%9D%91" target="_blank" style="color:red;">[时间校准]</a></p>
+                    <p>状态显示为'离线'：1.后端进程挂掉；2.节点和数据库之间的时区不一致或者通信延迟过高；3.服务器真的宕机。<a href="https://github.com/ssrpanel/ssrpanel/wiki/VPS%E6%8E%A8%E8%8D%90&%E8%B4%AD%E4%B9%B0%E7%BB%8F%E9%AA%8C" target="_blank" style="color:red;">[VPS推荐]</a></p>
+                    <p>务必检查各节点服务器的时间是否同步。<a href="https://github.com/ssrpanel/SSRPanel/wiki/%E5%8D%95%E7%AB%AF%E5%8F%A3%E5%A4%9A%E7%94%A8%E6%88%B7%E7%9A%84%E5%9D%91" target="_blank" style="color:red;">[时间校准]</a></p>
                 </div>
             </div>
         </div>
@@ -39,7 +39,8 @@
                                     <th> 类型 </th>
                                     <th> 名称 </th>
                                     <th> IP </th>
-                                    <th> 绑定域名 </th>
+                                    <th> 域名 </th>
+                                    <th> 存活 </th>
                                     <th> 状态 </th>
                                     <th> 在线 </th>
                                     <th> <span class="node-flow"><a href="javascript:showFlowTips();">产生流量</a></span> </th>
@@ -57,10 +58,19 @@
                                         @foreach($nodeList as $node)
                                             <tr class="odd gradeX">
                                                 <td> {{$node->id}} </td>
-                                                <td> {{$node->type == 2 ? 'V2Ray' : 'Shadowsocks(R)'}} </td>
+                                                <td>
+                                                    <span class="label {{$node->status ? 'label-info' : 'label-default'}}">{{$node->type == 2 ? 'V2Ray' : 'Shadowsocks(R)'}}</span>
+                                                </td>
                                                 <td> {{$node->name}} </td>
-                                                <td> <span class="label {{$node->status ? 'label-danger' : 'label-default'}}">{{$node->ip}}</span> </td>
+                                                <td>
+                                                    @if($node->is_nat)
+                                                        <span class="label {{$node->status ? 'label-danger' : 'label-default'}}">NAT</span>
+                                                    @else
+                                                        <span class="label {{$node->status ? 'label-danger' : 'label-default'}}">{{$node->ip}}</span>
+                                                    @endif
+                                                </td>
                                                 <td> <span class="label {{$node->status ? 'label-danger' : 'label-default'}}">{{$node->server}}</span> </td>
+                                                <td> <span class="label {{$node->status ? 'label-danger' : 'label-default'}}">{{$node->uptime}}</span> </td>
                                                 <td> <span class="label {{$node->status ? 'label-danger' : 'label-default'}}">{{$node->load}}</span> </td>
                                                 <td> <span class="label {{$node->status ? 'label-danger' : 'label-default'}}">{{$node->online_users}}</span> </td>
                                                 <td> {{$node->transfer}} </td>
@@ -71,17 +81,19 @@
                                                     @if(!$node->is_subscribe) <span class="label label-info"><s>订</s></span> @endif
                                                 </td>
                                                 <td>
-                                                    <button type="button" class="btn btn-sm blue btn-outline" onclick="editNode('{{$node->id}}')">编辑</button>
                                                     <div class="btn-group">
-                                                        <a class="btn btn-info dropdown-toggle" data-toggle="dropdown" href="javascript:;" aria-expanded="false"> 更多
+                                                        <a class="btn btn-default dropdown-toggle" data-toggle="dropdown" href="javascript:;" aria-expanded="false"> 操作
                                                             <i class="fa fa-angle-down"></i>
                                                         </a>
                                                         <ul class="dropdown-menu">
                                                             <li>
-                                                                <a href="javascript:nodeMonitor('{{$node->id}}');"> 流量概况 </a>
+                                                                <a href="javascript:editNode('{{$node->id}}');"> 编辑 </a>
                                                             </li>
                                                             <li>
                                                                 <a href="javascript:delNode('{{$node->id}}');"> 删除 </a>
+                                                            </li>
+                                                            <li>
+                                                                <a href="javascript:nodeMonitor('{{$node->id}}');"> 流量概况 </a>
                                                             </li>
                                                         </ul>
                                                     </div>
@@ -158,5 +170,14 @@
                 time: 1200
             });
         }
+
+        // 修正table的dropdown
+        $('.table-scrollable').on('show.bs.dropdown', function () {
+            $('.table-scrollable').css( "overflow", "inherit" );
+        });
+
+        $('.table-scrollable').on('hide.bs.dropdown', function () {
+            $('.table-scrollable').css( "overflow", "auto" );
+        });
     </script>
 @endsection

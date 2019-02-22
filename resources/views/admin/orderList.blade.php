@@ -42,7 +42,8 @@
                                     <option value="" @if(Request::get('pay_way') == '') selected @endif>支付方式</option>
                                     <option value="1" @if(Request::get('pay_way') == '1') selected @endif>余额支付</option>
                                     <option value="2" @if(Request::get('pay_way') == '2') selected @endif>有赞云支付</option>
-                                    <option value="3" @if(Request::get('pay_way') == '3') selected @endif>TrimePay支付</option>
+                                    <option value="4" @if(Request::get('pay_way') == '4') selected @endif>支付宝国际</option>
+                                    <option value="5" @if(Request::get('pay_way') == '5') selected @endif>支付宝当面付</option>
                                 </select>
                             </div>
                             <div class="col-md-3 col-sm-4 col-xs-12">
@@ -86,10 +87,10 @@
                                             <tr>
                                                 <td> {{$order->oid}} </td>
                                                 <td> 
-                                                    @if(!empty($order->user) )
-                                                        <a href="{{url('admin/userList?username=') . $order->user->username}}" target="_blank"> <span class="label label-info">{{$order->user->username}}</span> </a>
-                                                    @else
+                                                    @if(empty($order->user) )
                                                         【账号不存在】
+                                                    @else
+                                                        <a href="{{url('admin/userList?id=') . $order->user->id}}" target="_blank"> <span class="label label-info">{{$order->user->username}}</span> </a>
                                                     @endif
                                                 </td>
                                                 <td> {{$order->order_sn}} </td>
@@ -100,24 +101,26 @@
                                                 <td> ￥{{$order->amount}} </td>
                                                 <td>
                                                     @if($order->pay_way == '1')
-                                                        余额支付
+                                                        <span class="label label-info"> 余额支付 </span>
                                                     @elseif($order->pay_way == '2')
-                                                        有赞云支付
-                                                    @elseif($order->pay_way == '3')
-                                                        TrimePay支付
+                                                        <span class="label label-info"> 有赞云支付 </span>
+                                                    @elseif($order->pay_way == '4')
+                                                        <span class="label label-info"> 支付宝国际 </span>
+                                                    @elseif($order->pay_way == '5')
+                                                        <span class="label label-info"> 支付宝当面付 </span>
                                                     @else
-                                                        未知
+                                                        <span class="label label-info"> 未知 </span>
                                                     @endif
                                                 </td>
                                                 <td>
                                                     @if($order->status == '-1')
-                                                        已关闭
+                                                        <span class="label label-danger"> 已关闭 </span>
                                                     @elseif ($order->status == '0')
-                                                        待支付
+                                                        <span class="label label-default"> 待支付 </span>
                                                     @elseif ($order->status == '1')
-                                                        已支付待确认
+                                                        <span class="label label-default"> 已支付待确认 </span>
                                                     @else
-                                                        已完成
+                                                        <span class="label label-success"> 已完成 </span>
                                                     @endif
                                                 </td>
                                                 <td> {{$order->created_at}} </td>

@@ -44,10 +44,10 @@
                                             <a href="#tab_8" data-toggle="tab"> 有赞云支付 </a>
                                         </li>
                                         <li>
-                                            <a href="#tab_9" data-toggle="tab"> TrimePay支付 </a>
+                                            <a href="#tab_9" data-toggle="tab"> 支付宝国际 </a>
                                         </li>
-										<li>
-                                            <a href="#tab_10" data-toggle="tab"> AliPay </a>
+                                        <li>
+                                            <a href="#tab_10" data-toggle="tab"> 支付宝当面付 </a>
                                         </li>
                                     </ul>
                                 </div>
@@ -78,7 +78,7 @@
                                                                         <button class="btn btn-success" type="button" onclick="setWebsiteUrl()">修改</button>
                                                                     </span>
                                                                 </div>
-                                                                <span class="help-block"> 生成重置密码、有赞云支付、TrimePay支付、AliPay必备，示例：https://www.ssrpanel.com </span>
+                                                                <span class="help-block"> 生成重置密码、在线支付必备，示例：https://www.ssrpanel.com </span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -164,6 +164,22 @@
                                                                 <span class="help-block"> 注册时需要先通过邮件获取验证码方可注册，‘激活账号’失效 </span>
                                                             </div>
                                                         </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <div class="col-md-6 col-sm-6 col-xs-12">
+                                                            <label for="website_security_code" class="col-md-3 control-label">网站安全码</label>
+                                                            <div class="col-md-9">
+                                                                <div class="input-group">
+                                                                    <input class="form-control" type="text" name="website_security_code" value="{{$website_security_code}}" id="website_security_code" />
+                                                                    <span class="input-group-btn">
+                                                                        <button class="btn btn-default" type="button" onclick="makeWebsiteSecurityCode()">生成</button>
+                                                                        <button class="btn btn-success" type="button" onclick="setWebsiteSecurityCode()">修改</button>
+                                                                    </span>
+                                                                </div>
+                                                                <span class="help-block"> 非空时必须通过 <a href="/login?securityCode=" target="_blank">安全入口</a> 加上安全码才可访问 </span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6 col-sm-6 col-xs-12"></div>
                                                     </div>
                                                 </div>
                                             </form>
@@ -349,7 +365,7 @@
                                                                         <button class="btn btn-success" type="button" onclick="setSubscribeMax()">修改</button>
                                                                     </span>
                                                                 </div>
-                                                                <span class="help-block"> 客户端订阅时取得几个节点 </span>
+                                                                <span class="help-block"> 客户端订阅时取得几个节点，为0时返回全部节点 </span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -358,14 +374,14 @@
                                                             <label for="mix_subscribe" class="col-md-3 control-label">混合订阅</label>
                                                             <div class="col-md-9">
                                                                 <input type="checkbox" class="make-switch" @if($mix_subscribe) checked @endif id="mix_subscribe" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
-                                                                <span class="help-block"> 启用后，订阅信息中将包含V2Ray节点信息（Vmess） </span>
+                                                                <span class="help-block"> 启用后，订阅信息中将包含V2Ray节点信息（仅支持Shadowrocket、Quantumult、v2rayN） </span>
                                                             </div>
                                                         </div>
                                                         <div class="col-md-6 col-sm-6 col-xs-12">
                                                             <label for="rand_subscribe" class="col-md-3 control-label">随机订阅</label>
                                                             <div class="col-md-9">
                                                                 <input type="checkbox" class="make-switch" @if($rand_subscribe) checked @endif id="rand_subscribe" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
-                                                                <span class="help-block"> 启用后，订阅时将随机返回节点信息，否则按节点排序返回（仅支持Shadowrocket、Quantumult） </span>
+                                                                <span class="help-block"> 启用后，订阅时将随机返回节点信息，否则按节点排序返回 </span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -529,10 +545,10 @@
                                                     </div>
                                                     <div class="form-group">
                                                         <div class="col-md-6 col-sm-6 col-xs-12">
-                                                            <label for="is_node_crash_warning" class="col-md-3 control-label">节点宕机提醒</label>
+                                                            <label for="is_node_crash_warning" class="col-md-3 control-label">节点离线提醒</label>
                                                             <div class="col-md-9">
                                                                 <input type="checkbox" class="make-switch" @if($is_node_crash_warning) checked @endif id="is_node_crash_warning" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
-                                                                <span class="help-block"> 启用后如果节点宕机则发出提醒邮件 </span>
+                                                                <span class="help-block"> 启用后如果节点离线则发出提醒邮件 </span>
                                                             </div>
                                                         </div>
                                                         <div class="col-md-6 col-sm-6 col-xs-12">
@@ -544,7 +560,7 @@
                                                                         <button class="btn btn-success" type="button" onclick="setCrashWarningEmail()">修改</button>
                                                                     </span>
                                                                 </div>
-                                                                <span class="help-block"> 填写此值则节点宕机、用户回复工单都会自动提醒 </span>
+                                                                <span class="help-block"> 填写此值则节点离线、用户回复工单都会自动提醒 </span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -575,7 +591,7 @@
                                                             <label for="is_server_chan" class="col-md-3 control-label">ServerChan</label>
                                                             <div class="col-md-9">
                                                                 <input type="checkbox" class="make-switch" @if($is_server_chan) checked @endif id="is_server_chan" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
-                                                                <span class="help-block"> 推送节点宕机提醒、用户流量异常警告、节点使用报告（<a href="http://sc.ftqq.com" target="_blank">绑定微信</a>） </span>
+                                                                <span class="help-block"> 推送节点离线提醒、用户流量异常警告、节点使用报告（<a href="http://sc.ftqq.com" target="_blank">绑定微信</a>） </span>
                                                             </div>
                                                         </div>
                                                         <div class="col-md-6 col-sm-6 col-xs-12">
@@ -871,81 +887,42 @@
                                                 <div class="portlet-body">
                                                     <div class="form-group">
                                                         <div class="col-md-6 col-sm-6 col-xs-12">
-                                                            <label for="is_trimepay" class="col-md-3 control-label">本功能</label>
-                                                            <div class="col-md-9">
-                                                                <input type="checkbox" class="make-switch" @if($is_trimepay) checked @endif id="is_trimepay" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
-                                                                <span class="help-block"> 请先到 <a href="https://portal.trimepay.com/#/auth/register/408" target="_blank">TrimePay</a> 申请app_id和app_secret </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <div class="col-md-6 col-sm-6 col-xs-12">
-                                                            <label for="trimepay_appid" class="col-md-3 control-label">app_id</label>
-                                                            <div class="col-md-9">
-                                                                <div class="input-group">
-                                                                    <input class="form-control" type="text" name="trimepay_appid" value="{{$trimepay_appid}}" id="trimepay_appid" />
-                                                                    <span class="input-group-btn">
-                                                                        <button class="btn btn-success" type="button" onclick="setTrimepayAppId()">修改</button>
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-md-6 col-sm-6 col-xs-12">
-                                                            <label for="trimepay_appsecret" class="col-md-3 control-label">app_secret</label>
-                                                            <div class="col-md-9">
-                                                                <div class="input-group">
-                                                                    <input class="form-control" type="text" name="trimepay_appsecret" value="{{$trimepay_appsecret}}" id="trimepay_appsecret" />
-                                                                    <span class="input-group-btn">
-                                                                    <button class="btn btn-success" type="button" onclick="setTrimepayAppSecret()">修改</button>
-                                                                </span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </form>
-                                        </div>
-										<div class="tab-pane" id="tab_10">
-                                            <form action="#" method="post" class="form-horizontal">
-                                                <div class="portlet-body">
-                                                    <div class="form-group">
-                                                        <div class="col-md-6 col-sm-6 col-xs-12">
                                                             <label for="is_alipay" class="col-md-3 control-label">本功能</label>
                                                             <div class="col-md-9">
                                                                 <input type="checkbox" class="make-switch" @if($is_alipay) checked @endif id="is_alipay" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
                                                                 <span class="help-block"> 请先到 <a href="https://global.alipay.com/" target="_blank">AliPay国际</a> 申请partner和key </span>
                                                             </div>
                                                         </div>
-														<div class="col-md-6 col-sm-6 col-xs-12">
+                                                        <div class="col-md-6 col-sm-6 col-xs-12">
                                                             <label for="alipay_currency" class="col-md-3 control-label">结算币种</label>
                                                             <div class="col-md-9">
                                                                 <select id="alipay_currency" class="form-control select2" name="alipay_currency">
                                                                     <option value="USD" @if($alipay_currency == 'USD') selected @endif>美元</option>
-																	<option value="HKD" @if($alipay_currency == 'HKD') selected @endif>港币</option>
-																	<option value="JPY" @if($alipay_currency == 'JPY') selected @endif>日元</option>
-																	<option value="EUR" @if($alipay_currency == 'EUR') selected @endif>欧元</option>
+                                                                    <option value="HKD" @if($alipay_currency == 'HKD') selected @endif>港币</option>
+                                                                    <option value="JPY" @if($alipay_currency == 'JPY') selected @endif>日元</option>
+                                                                    <option value="EUR" @if($alipay_currency == 'EUR') selected @endif>欧元</option>
                                                                 </select>
                                                             </div>
                                                         </div>
                                                     </div>
-													<div class="form-group">
-														<div class="col-md-6 col-sm-6 col-xs-12">
+                                                    <div class="form-group">
+                                                        <div class="col-md-6 col-sm-6 col-xs-12">
                                                             <label for="alipay_sign_type" class="col-md-3 control-label">加密方式</label>
                                                             <div class="col-md-9">
                                                                 <select id="alipay_sign_type" class="form-control select2" name="alipay_sign_type">
                                                                     <option value="MD5" @if($alipay_sign_type == 'MD5') selected @endif>MD5</option>
-																	<option value="RSA" @if($alipay_sign_type == 'RSA') selected @endif>RSA</option>
+                                                                    <option value="RSA" @if($alipay_sign_type == 'RSA') selected @endif>RSA</option>
                                                                 </select>
                                                             </div>
                                                         </div>
-														<div class="col-md-6 col-sm-6 col-xs-12">
+                                                        <div class="col-md-6 col-sm-6 col-xs-12">
                                                             <label for="alipay_transport" class="col-md-3 control-label">启用SSL验证</label>
                                                             <div class="col-md-9">
                                                                 <select id="alipay_transport" class="form-control select2" name="alipay_transport">
                                                                     <option value="http" @if($alipay_transport == 'http') selected @endif>否</option>
-																	<option value="https" @if($alipay_transport == 'https') selected @endif>是</option>
+                                                                    <option value="https" @if($alipay_transport == 'https') selected @endif>是</option>
                                                                 </select>
-																<span class="help-block"> HTTPS站点需启用 </span>
+                                                                <span class="help-block"> HTTPS站点需启用 </span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -973,7 +950,7 @@
                                                             </div>
                                                         </div>
                                                     </div>
-													<div class="form-group">
+                                                    <div class="form-group">
                                                         <div class="col-md-6 col-sm-6 col-xs-12">
                                                             <label for="alipay_private_key" class="col-md-3 control-label">RSA私钥</label>
                                                             <div class="col-md-9">
@@ -992,6 +969,59 @@
                                                                     <input class="form-control" type="password" name="alipay_public_key" value="{{$alipay_public_key}}" id="alipay_public_key" />
                                                                     <span class="input-group-btn">
                                                                     <button class="btn btn-success" type="button" onclick="setAlipayPublicKey()">修改</button>
+                                                                </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                        <div class="tab-pane" id="tab_10">
+                                            <form action="#" method="post" class="form-horizontal">
+                                                <div class="portlet-body">
+                                                    <div class="form-group">
+                                                        <div class="col-md-6 col-sm-6 col-xs-12">
+                                                            <label for="is_f2fpay"
+                                                                   class="col-md-3 control-label">本功能</label>
+                                                            <div class="col-md-9">
+                                                                <input type="checkbox" class="make-switch" @if($is_f2fpay) checked @endif id="is_f2fpay" data-on-color="success" data-off-color="danger" data-on-text="启用" data-off-text="关闭">
+                                                                <span class="help-block"> 本功能需要 <a href="https://open.alipay.com/platform/home.htm" target="_blank">蚂蚁金服开放平台</a> 申请权限及应用 </span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6 col-sm-6 col-xs-12">
+                                                            <label for="alipay_partner" class="col-md-3 control-label">应用ID</label>
+                                                            <div class="col-md-9">
+                                                                <div class="input-group">
+                                                                    <input class="form-control" type="text" name="f2fpay_app_id" value="{{$f2fpay_app_id}}" id="f2fpay_app_id"/>
+                                                                    <span class="input-group-btn">
+                                                                        <button class="btn btn-success" type="button" onclick="setF2fpayAppId()">修改</button>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <div class="col-md-6 col-sm-6 col-xs-12">
+                                                            <label for="alipay_private_key"
+                                                                   class="col-md-3 control-label">RSA私钥</label>
+                                                            <div class="col-md-9">
+                                                                <div class="input-group">
+                                                                    <input class="form-control" type="text" name="f2fpay_private_key" value="{{$f2fpay_private_key}}" id="f2fpay_private_key"/>
+                                                                    <span class="input-group-btn">
+                                                                        <button class="btn btn-success" type="button" onclick="setF2fpayPrivateKey()">修改</button>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6 col-sm-6 col-xs-12">
+                                                            <label for="alipay_public_key"
+                                                                   class="col-md-3 control-label">RSA公钥</label>
+                                                            <div class="col-md-9">
+                                                                <div class="input-group">
+                                                                    <input class="form-control" type="text" name="f2fpay_public_key" value="{{$f2fpay_public_key}}" id="f2fpay_public_key"/>
+                                                                    <span class="input-group-btn">
+                                                                    <button class="btn btn-success" type="button" onclick="setF2fpayPublicKey()">修改</button>
                                                                 </span>
                                                                 </div>
                                                             </div>
@@ -1022,15 +1052,18 @@
         // 注册的默认标签
         $('#initial_labels_for_user').select2({
             theme: 'bootstrap',
-            placeholder: '设置后则可见相同标签的节点',
             allowClear: true,
-            width:'100%'
+            width: '100%'
         }).change(function () {
             var initial_labels_for_user = $(this).val() ? $(this).val().join(',') : '';
 
             console.log(initial_labels_for_user);
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'initial_labels_for_user', value:initial_labels_for_user}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'initial_labels_for_user',
+                value: initial_labels_for_user
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1040,11 +1073,15 @@
 
         // 启用、禁用随机端口
         $('#is_rand_port').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_rand_port = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_rand_port', value:is_rand_port}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_rand_port',
+                    value: is_rand_port
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1055,11 +1092,15 @@
 
         // 启用、禁用屏蔽大陆访问
         $('#is_forbid_china').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_forbid_china = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_forbid_china', value:is_forbid_china}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_forbid_china',
+                    value: is_forbid_china
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1070,11 +1111,15 @@
 
         // 启用、禁用屏蔽海外访问
         $('#is_forbid_oversea').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_forbid_oversea = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_forbid_oversea', value:is_forbid_oversea}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_forbid_oversea',
+                    value: is_forbid_oversea
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1085,11 +1130,15 @@
 
         // 启用、禁用机器人访问
         $('#is_forbid_robot').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_forbid_robot = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_forbid_robot', value:is_forbid_robot}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_forbid_robot',
+                    value: is_forbid_robot
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1100,11 +1149,15 @@
 
         // 启用、禁用注册校验验证码
         $('#is_verify_register').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_verify_register = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_verify_register', value:is_verify_register}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_verify_register',
+                    value: is_verify_register
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1115,11 +1168,15 @@
 
         // 启用、禁用自定义端口
         $('#is_user_rand_port').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_user_rand_port = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_user_rand_port', value:is_user_rand_port}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_user_rand_port',
+                    value: is_user_rand_port
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1130,11 +1187,15 @@
 
         // 启用、禁用登录加积分
         $('#login_add_score').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var login_add_score = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'login_add_score', value:login_add_score}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'login_add_score',
+                    value: login_add_score
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1145,11 +1206,15 @@
 
         // 启用、禁用注册
         $('#is_register').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_register = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_register', value:is_register}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_register',
+                    value: is_register
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1159,13 +1224,17 @@
         });
 
         // 启用、可选、禁用邀请注册
-        $('#is_invite_register').change(function() {
+        $('#is_invite_register').change(function () {
             var is_invite_register = $(this).val();
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_invite_register', value:is_invite_register}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
-                        if (ret.status == 'fail') {
-                            window.location.reload();
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'is_invite_register',
+                value: is_invite_register
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
+                    if (ret.status == 'fail') {
+                        window.location.reload();
                     }
                 });
             });
@@ -1173,11 +1242,15 @@
 
         // 启用、禁用用户重置密码
         $('#is_reset_password').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_reset_password = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_reset_password', value:is_reset_password}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_reset_password',
+                    value: is_reset_password
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1188,11 +1261,15 @@
 
         // 启用、禁用验证码
         $('#is_captcha').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_captcha = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_captcha', value:is_captcha}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_captcha',
+                    value: is_captcha
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1203,11 +1280,15 @@
 
         // 启用、禁用免费邀请码
         $('#is_free_code').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_free_code = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_free_code', value:is_free_code}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_free_code',
+                    value: is_free_code
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1218,11 +1299,15 @@
 
         // 启用、禁用用户激活用户
         $('#is_active_register').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_active_register = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_active_register', value:is_active_register}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_active_register',
+                    value: is_active_register
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1233,11 +1318,15 @@
 
         // 启用、禁用用户到期自动邮件提醒
         $('#expire_warning').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var expire_warning = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'expire_warning', value:expire_warning}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'expire_warning',
+                    value: expire_warning
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1246,13 +1335,17 @@
             }
         });
 
-        // 启用、禁用节点宕机发件提醒管理员
+        // 启用、禁用节点离线发件提醒管理员
         $('#is_node_crash_warning').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_node_crash_warning = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_node_crash_warning', value:is_node_crash_warning}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_node_crash_warning',
+                    value: is_node_crash_warning
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1261,13 +1354,17 @@
             }
         });
 
-        // 启用、禁用节点宕机发ServerChan微信消息提醒
+        // 启用、禁用节点离线发ServerChan微信消息提醒
         $('#is_server_chan').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_server_chan = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_server_chan', value:is_server_chan}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_server_chan',
+                    value: is_server_chan
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1278,11 +1375,15 @@
 
         // 启用、禁用Namesilo
         $('#is_namesilo').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_namesilo = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_namesilo', value:is_namesilo}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_namesilo',
+                    value: is_namesilo
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1293,11 +1394,15 @@
 
         // 启用、禁用混合订阅
         $('#mix_subscribe').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var mix_subscribe = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'mix_subscribe', value:mix_subscribe}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'mix_subscribe',
+                    value: mix_subscribe
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1308,11 +1413,15 @@
 
         // 启用、禁用随机订阅
         $('#rand_subscribe').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var rand_subscribe = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'rand_subscribe', value:rand_subscribe}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'rand_subscribe',
+                    value: rand_subscribe
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1323,11 +1432,15 @@
 
         // 启用、禁用自定义订阅
         $('#is_custom_subscribe').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_custom_subscribe = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_custom_subscribe', value:is_custom_subscribe}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_custom_subscribe',
+                    value: is_custom_subscribe
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1338,11 +1451,15 @@
 
         // 启用、禁用PushBear
         $('#is_push_bear').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_push_bear = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_push_bear', value:is_push_bear}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_push_bear',
+                    value: is_push_bear
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1353,11 +1470,15 @@
 
         // 启用、禁用TCP阻断探测
         $('#is_tcp_check').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_tcp_check = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_tcp_check', value:is_tcp_check}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_tcp_check',
+                    value: is_tcp_check
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1368,11 +1489,15 @@
 
         // 启用、禁用订阅异常自动封禁
         $('#is_subscribe_ban').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_subscribe_ban = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_subscribe_ban', value:is_subscribe_ban}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_subscribe_ban',
+                    value: is_subscribe_ban
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1383,11 +1508,15 @@
 
         // 启用、禁用退关返利用户可见与否
         $('#referral_status').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var referral_status = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'referral_status', value:referral_status}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'referral_status',
+                    value: referral_status
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1398,11 +1527,15 @@
 
         // 启用、禁用随机端口
         $('#traffic_warning').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var traffic_warning = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'traffic_warning', value:traffic_warning}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'traffic_warning',
+                    value: traffic_warning
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1413,11 +1546,15 @@
 
         // 启用、禁用随机端口
         $('#is_clear_log').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_clear_log = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_clear_log', value:is_clear_log}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_clear_log',
+                    value: is_clear_log
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1428,11 +1565,15 @@
 
         // 启用、禁用流量自动重置
         $('#reset_traffic').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var reset_traffic = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'reset_traffic', value:reset_traffic}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'reset_traffic',
+                    value: reset_traffic
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1443,11 +1584,15 @@
 
         // 启用、禁用流量异常自动封号
         $('#is_traffic_ban').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_traffic_ban = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_traffic_ban', value:is_traffic_ban}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_traffic_ban',
+                    value: is_traffic_ban
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1458,11 +1603,15 @@
 
         // 启用、禁用端口自动释放
         $('#auto_release_port').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var auto_release_port = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'auto_release_port', value:auto_release_port}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'auto_release_port',
+                    value: auto_release_port
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1473,11 +1622,15 @@
 
         // 启用、禁用节点使用报告
         $('#node_daily_report').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var node_daily_report = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'node_daily_report', value:node_daily_report}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'node_daily_report',
+                    value: node_daily_report
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1488,11 +1641,15 @@
 
         // 过期封禁是否禁止账号
         $('#is_ban_status').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_ban_status = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_ban_status', value:is_ban_status}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_ban_status',
+                    value: is_ban_status
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1503,11 +1660,15 @@
 
         // 启用、禁用有赞云
         $('#is_youzan').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_youzan = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_youzan', value:is_youzan}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_youzan',
+                    value: is_youzan
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1516,28 +1677,36 @@
             }
         });
 
-        
-        $('#is_trimepay').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
-                var is_trimepay = state ? 1 : 0;
-
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_trimepay', value:is_trimepay}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
-                        if (ret.status == 'fail') {
-                            window.location.reload();
-                        }
-                    });
-                });
-            }
-        });
-		
-		// 启用、禁用alipay
-		$('#is_alipay').on({
-            'switchChange.bootstrapSwitch': function(event, state) {
+        // 启用、禁用支付宝国际
+        $('#is_alipay').on({
+            'switchChange.bootstrapSwitch': function (event, state) {
                 var is_alipay = state ? 1 : 0;
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'is_alipay', value:is_alipay}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_alipay',
+                    value: is_alipay
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
+                        if (ret.status == 'fail') {
+                            window.location.reload();
+                        }
+                    });
+                });
+            }
+        });
+
+        // 启用、禁用支付宝当面付
+        $('#is_f2fpay').on({
+            'switchChange.bootstrapSwitch': function (event, state) {
+                var is_f2fpay = state ? 1 : 0;
+
+                $.post("{{url('admin/setConfig')}}", {
+                    _token: '{{csrf_token()}}',
+                    name: 'is_f2fpay',
+                    value: is_f2fpay
+                }, function (ret) {
+                    layer.msg(ret.message, {time: 1000}, function () {
                         if (ret.status == 'fail') {
                             window.location.reload();
                         }
@@ -1551,12 +1720,16 @@
             var traffic_ban_value = $("#traffic_ban_value").val();
 
             if (traffic_ban_value < 1) {
-                layer.msg('不能小于1', {time:1000});
-                return ;
+                layer.msg('不能小于1', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'traffic_ban_value', value:traffic_ban_value}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'traffic_ban_value',
+                value: traffic_ban_value
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1569,12 +1742,16 @@
             var traffic_ban_time = $("#traffic_ban_time").val();
 
             if (traffic_ban_time < 0) {
-                layer.msg('不能小于0', {time:1000});
-                return ;
+                layer.msg('不能小于0', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'traffic_ban_time', value:traffic_ban_time}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'traffic_ban_time',
+                value: traffic_ban_time
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1582,12 +1759,16 @@
             });
         }
 
-        // 设置节点宕机警告收件地址
+        // 设置节点离线警告收件地址
         function setCrashWarningEmail() {
             var crash_warning_email = $("#crash_warning_email").val();
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'crash_warning_email', value:crash_warning_email}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'crash_warning_email',
+                value: crash_warning_email
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1599,8 +1780,12 @@
         function setServerChanKey() {
             var server_chan_key = $("#server_chan_key").val();
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'server_chan_key', value:server_chan_key}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'server_chan_key',
+                value: server_chan_key
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1612,8 +1797,12 @@
         function setNamesiloKey() {
             var namesilo_key = $("#namesilo_key").val();
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'namesilo_key', value:namesilo_key}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'namesilo_key',
+                value: namesilo_key
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1625,8 +1814,12 @@
         function setPushBearSendKey() {
             var push_bear_send_key = $("#push_bear_send_key").val();
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'push_bear_send_key', value:push_bear_send_key}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'push_bear_send_key',
+                value: push_bear_send_key
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1638,8 +1831,12 @@
         function setPushBearQrCode() {
             var push_bear_qrcode = $("#push_bear_qrcode").val();
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'push_bear_qrcode', value:push_bear_qrcode}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'push_bear_qrcode',
+                value: push_bear_qrcode
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1652,12 +1849,16 @@
             var tcp_check_warning_times = $("#tcp_check_warning_times").val();
 
             if (tcp_check_warning_times < 0 || tcp_check_warning_times > 12) {
-                layer.msg('只能在0-12之间', {time:1000});
-                return ;
+                layer.msg('只能在0-12之间', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'tcp_check_warning_times', value:tcp_check_warning_times}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'tcp_check_warning_times',
+                value: tcp_check_warning_times
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1670,12 +1871,16 @@
             var subscribe_ban_times = $("#subscribe_ban_times").val();
 
             if (subscribe_ban_times < 0) {
-                layer.msg('不能小于0', {time:1000});
-                return ;
+                layer.msg('不能小于0', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'subscribe_ban_times', value:subscribe_ban_times}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'subscribe_ban_times',
+                value: subscribe_ban_times
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1687,8 +1892,12 @@
         function setKdtId() {
             var kdt_id = $("#kdt_id").val();
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'kdt_id', value:kdt_id}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'kdt_id',
+                value: kdt_id
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1700,8 +1909,12 @@
         function setYouzanClientId() {
             var youzan_client_id = $("#youzan_client_id").val();
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'youzan_client_id', value:youzan_client_id}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'youzan_client_id',
+                value: youzan_client_id
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1713,8 +1926,12 @@
         function setYouzanClientSecret() {
             var youzan_client_secret = $("#youzan_client_secret").val();
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'youzan_client_secret', value:youzan_client_secret}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'youzan_client_secret',
+                value: youzan_client_secret
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1722,119 +1939,180 @@
             });
         }
 
-        
-        function setTrimepayAppId() {
-            var trimepay_appid = $("#trimepay_appid").val();
-
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'trimepay_appid', value:trimepay_appid}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
-                    if (ret.status == 'fail') {
-                        window.location.reload();
-                    }
-                });
-            });
-        }
-
-        function setTrimepayAppSecret() {
-            var trimepay_appsecret = $("#trimepay_appsecret").val();
-
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'trimepay_appsecret', value:trimepay_appsecret}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
-                    if (ret.status == 'fail') {
-                        window.location.reload();
-                    }
-                });
-            });
-        }
-		// 设置alipay加密方式
-        $('#alipay_sign_type').change(function() {
+        // 设置alipay加密方式
+        $('#alipay_sign_type').change(function () {
             var alipay_sign_type = $(this).val();
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'alipay_sign_type', value:alipay_sign_type}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
-                        if (ret.status == 'fail') {
-                            window.location.reload();
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'alipay_sign_type',
+                value: alipay_sign_type
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
+                    if (ret.status == 'fail') {
+                        window.location.reload();
                     }
                 });
             });
         });
-		
-		// 设置alipay是否启用SSL验证
-        $('#alipay_transport').change(function() {
+
+        // 设置alipay是否启用SSL验证
+        $('#alipay_transport').change(function () {
             var alipay_transport = $(this).val();
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'alipay_transport', value:alipay_transport}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
-                        if (ret.status == 'fail') {
-                            window.location.reload();
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'alipay_transport',
+                value: alipay_transport
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
+                    if (ret.status == 'fail') {
+                        window.location.reload();
                     }
                 });
             });
         });
-		
-		//设置alipay的partner
+
+        //设置alipay的partner
         function setAlipayPartner() {
             var alipay_partner = $("#alipay_partner").val();
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'alipay_partner', value:alipay_partner}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'alipay_partner',
+                value: alipay_partner
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
                 });
             });
         }
-		
-		//设置alipay的key
-		function setAlipayKey() {
+
+        //设置alipay的key
+        function setAlipayKey() {
             var alipay_key = $("#alipay_key").val();
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'alipay_key', value:alipay_key}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'alipay_key',
+                value: alipay_key
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
                 });
             });
         }
-		
-		//设置alipay的私钥
-		function setAlipayPrivateKey() {
+
+        //设置alipay的私钥
+        function setAlipayPrivateKey() {
             var alipay_private_key = $("#alipay_private_key").val();
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'alipay_private_key', value:alipay_private_key}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'alipay_private_key',
+                value: alipay_private_key
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
                 });
             });
         }
-		
-		//设置alipay的公钥
-		function setAlipayPublicKey() {
+
+        //设置alipay的公钥
+        function setAlipayPublicKey() {
             var alipay_public_key = $("#alipay_public_key").val();
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'alipay_public_key', value:alipay_public_key}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'alipay_public_key',
+                value: alipay_public_key
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
                 });
             });
         }
-		
+
         // 设置alipay结算币种
-        $('#alipay_currency').change(function() {
+        $('#alipay_currency').change(function () {
             var alipay_currency = $(this).val();
 
-                $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'alipay_currency', value:alipay_currency}, function (ret) {
-                    layer.msg(ret.message, {time:1000}, function() {
-                        if (ret.status == 'fail') {
-                            window.location.reload();
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'alipay_currency',
+                value: alipay_currency
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
+                    if (ret.status == 'fail') {
+                        window.location.reload();
                     }
                 });
             });
+        });
+
+        // 设置f2fpay的应用id
+        function setF2fpayAppId() {
+            var f2fpay_app_id = $("#f2fpay_app_id").val();
+
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'f2fpay_app_id',
+                value: f2fpay_app_id
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
+                    if (ret.status == 'fail') {
+                        window.location.reload();
+                    }
+                });
+            });
+        }
+
+        // 设置f2fpay的私钥
+        function setF2fpayPrivateKey() {
+            var f2fpay_private_key = $("#f2fpay_private_key").val();
+
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'f2fpay_private_key',
+                value: f2fpay_private_key
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
+                    if (ret.status == 'fail') {
+                        window.location.reload();
+                    }
+                });
+            });
+        }
+
+        // 设置f2fpay的公钥
+        function setF2fpayPublicKey() {
+            var f2fpay_public_key = $("#f2fpay_public_key").val();
+
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'f2fpay_public_key',
+                value: f2fpay_public_key
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
+                    if (ret.status == 'fail') {
+                        window.location.reload();
+                    }
+                });
+            });
+        }
+
+
+        // 自动去除公钥和私钥中的空格和换行
+        $("#alipay_public_key,#alipay_private_key,#f2fpay_public_key,#f2fpay_private_key").on('input', function () {
+            $(this).val($(this).val().replace(/(\s+)/g, ''));
         });
 
         // 设置最小积分
@@ -1843,17 +2121,21 @@
             var max_rand_score = $("#max_rand_score").val();
 
             if (parseInt(min_rand_score) < 0) {
-                layer.msg('最小积分值不能小于0', {time:1000});
-                return ;
+                layer.msg('最小积分值不能小于0', {time: 1000});
+                return;
             }
 
             if (parseInt(min_rand_score) >= parseInt(max_rand_score)) {
-                layer.msg('最小积分值必须小于最大积分值', {time:1000});
-                return ;
+                layer.msg('最小积分值必须小于最大积分值', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'min_rand_score', value:min_rand_score}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'min_rand_score',
+                value: min_rand_score
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1867,17 +2149,21 @@
             var max_rand_score = $(this).val();
 
             if (parseInt(max_rand_score) > 99999) {
-                layer.msg('最大积分值不能大于99999', {time:1000});
-                return ;
+                layer.msg('最大积分值不能大于99999', {time: 1000});
+                return;
             }
 
             if (parseInt(min_rand_score) >= parseInt(max_rand_score)) {
-                layer.msg('最大积分值必须大于最小积分值', {time:1000});
-                return ;
+                layer.msg('最大积分值必须大于最小积分值', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'max_rand_score', value:max_rand_score}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'max_rand_score',
+                value: max_rand_score
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1892,17 +2178,21 @@
 
             // 最大端口必须大于最小端口
             if (parseInt(max_port) <= parseInt(min_port)) {
-                layer.msg('必须小于最大端口', {time:1000});
-                return ;
+                layer.msg('必须小于最大端口', {time: 1000});
+                return;
             }
 
             if (parseInt(min_port) < 1000) {
-                layer.msg('最小端口不能小于1000', {time:1000});
-                return ;
+                layer.msg('最小端口不能小于1000', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'min_port', value:min_port}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'min_port',
+                value: min_port
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1917,17 +2207,21 @@
 
             // 最大端口必须大于最小端口
             if (parseInt(max_port) <= parseInt(min_port)) {
-                layer.msg('必须大于最小端口', {time:1000});
-                return ;
+                layer.msg('必须大于最小端口', {time: 1000});
+                return;
             }
 
             if (parseInt(max_port) > 65535) {
-                layer.msg('最大端口不能大于65535', {time:1000});
-                return ;
+                layer.msg('最大端口不能大于65535', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'max_port', value:max_port}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'max_port',
+                value: max_port
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1935,10 +2229,14 @@
             });
         });
 
-        $("#goods_purchase_limit_strategy").change(function() {
+        $("#goods_purchase_limit_strategy").change(function () {
             var strategy = $(this).val();
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'goods_purchase_limit_strategy', value: strategy}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'goods_purchase_limit_strategy',
+                value: strategy
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1951,12 +2249,16 @@
             var default_days = parseInt($("#default_days").val());
 
             if (default_days < 0) {
-                layer.msg('不能小于0', {time:1000});
-                return ;
+                layer.msg('不能小于0', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'default_days', value:default_days}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'default_days',
+                value: default_days
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1969,12 +2271,16 @@
             var default_traffic = parseInt($("#default_traffic").val());
 
             if (default_traffic < 0) {
-                layer.msg('不能小于0', {time:1000});
-                return ;
+                layer.msg('不能小于0', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'default_traffic', value:default_traffic}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'default_traffic',
+                value: default_traffic
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -1987,12 +2293,16 @@
             var invite_num = parseInt($("#invite_num").val());
 
             if (invite_num < 0) {
-                layer.msg('不能小于0', {time:1000});
-                return ;
+                layer.msg('不能小于0', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'invite_num', value:invite_num}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'invite_num',
+                value: invite_num
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -2005,12 +2315,16 @@
             var reset_password_times = $("#reset_password_times").val();
 
             if (reset_password_times < 0) {
-                layer.msg('不能小于0', {time:1000});
-                return ;
+                layer.msg('不能小于0', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'reset_password_times', value:reset_password_times}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'reset_password_times',
+                value: reset_password_times
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -2023,12 +2337,16 @@
             var active_times = parseInt($("#active_times").val());
 
             if (active_times < 0) {
-                layer.msg('不能小于0', {time:1000});
-                return ;
+                layer.msg('不能小于0', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'active_times', value:active_times}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'active_times',
+                value: active_times
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -2040,8 +2358,12 @@
         function setSubscribeDomain() {
             var subscribe_domain = $("#subscribe_domain").val();
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'subscribe_domain', value:subscribe_domain}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'subscribe_domain',
+                value: subscribe_domain
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -2054,12 +2376,16 @@
             var register_ip_limit = parseInt($("#register_ip_limit").val());
 
             if (register_ip_limit < 0) {
-                layer.msg('不能小于0', {time:1000});
-                return ;
+                layer.msg('不能小于0', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'register_ip_limit', value:register_ip_limit}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'register_ip_limit',
+                value: register_ip_limit
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -2072,12 +2398,16 @@
             var subscribe_max = parseInt($("#subscribe_max").val());
 
             if (subscribe_max < 0) {
-                layer.msg('不能小于0', {time:1000});
-                return ;
+                layer.msg('不能小于0', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'subscribe_max', value:subscribe_max}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'subscribe_max',
+                value: subscribe_max
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -2090,12 +2420,16 @@
             var traffic_warning_percent = $("#traffic_warning_percent").val();
 
             if (traffic_warning_percent < 0) {
-                layer.msg('不能小于0', {time:1000});
-                return ;
+                layer.msg('不能小于0', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'traffic_warning_percent', value:traffic_warning_percent}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'traffic_warning_percent',
+                value: traffic_warning_percent
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -2108,12 +2442,16 @@
             var expire_days = parseInt($("#expire_days").val());
 
             if (expire_days < 0) {
-                layer.msg('不能小于0', {time:1000});
-                return ;
+                layer.msg('不能小于0', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'expire_days', value:expire_days}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'expire_days',
+                value: expire_days
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -2125,8 +2463,12 @@
         function setWebsiteName() {
             var website_name = $("#website_name").val();
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'website_name', value:website_name}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'website_name',
+                value: website_name
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -2138,8 +2480,36 @@
         function setWebsiteUrl() {
             var website_url = $("#website_url").val();
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'website_url', value:website_url}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'website_url',
+                value: website_url
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
+                    if (ret.status == 'fail') {
+                        window.location.reload();
+                    }
+                });
+            });
+        }
+
+        // 生成网站安全码
+        function makeWebsiteSecurityCode() {
+            $.get("{{url('makeSecurityCode')}}",  function(ret) {
+                $("#website_security_code").val(ret);
+            });
+        }
+
+        // 设置网站安全码
+        function setWebsiteSecurityCode() {
+            var website_security_code = $("#website_security_code").val();
+
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'website_security_code',
+                value: website_security_code
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -2152,12 +2522,16 @@
             var login_add_score_range = parseInt($("#login_add_score_range").val());
 
             if (login_add_score_range < 0) {
-                layer.msg('不能小于0', {time:1000});
-                return ;
+                layer.msg('不能小于0', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'login_add_score_range', value:login_add_score_range}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'login_add_score_range',
+                value: login_add_score_range
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -2170,12 +2544,16 @@
             var referral_traffic = parseInt($("#referral_traffic").val());
 
             if (referral_traffic < 0) {
-                layer.msg('不能小于0', {time:1000});
-                return ;
+                layer.msg('不能小于0', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'referral_traffic', value:referral_traffic}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'referral_traffic',
+                value: referral_traffic
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -2188,17 +2566,21 @@
             var referral_percent = $("#referral_percent").val();
 
             if (referral_percent < 0) {
-                layer.msg('不能小于0', {time:1000});
-                return ;
+                layer.msg('不能小于0', {time: 1000});
+                return;
             }
 
             if (referral_percent > 100) {
-                layer.msg('不能大于100', {time:1000});
-                return ;
+                layer.msg('不能大于100', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'referral_percent', value:referral_percent}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'referral_percent',
+                value: referral_percent
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }
@@ -2211,12 +2593,16 @@
             var referral_money = $("#referral_money").val();
 
             if (referral_money < 0) {
-                layer.msg('不能小于0', {time:1000});
-                return ;
+                layer.msg('不能小于0', {time: 1000});
+                return;
             }
 
-            $.post("{{url('admin/setConfig')}}", {_token:'{{csrf_token()}}', name:'referral_money', value:referral_money}, function (ret) {
-                layer.msg(ret.message, {time:1000}, function() {
+            $.post("{{url('admin/setConfig')}}", {
+                _token: '{{csrf_token()}}',
+                name: 'referral_money',
+                value: referral_money
+            }, function (ret) {
+                layer.msg(ret.message, {time: 1000}, function () {
                     if (ret.status == 'fail') {
                         window.location.reload();
                     }

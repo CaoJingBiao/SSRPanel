@@ -50,7 +50,7 @@ class AutoCheckNodeStatus extends Command
     {
         $title = "节点异常警告";
 
-        $nodeList = SsNode::query()->where('status', 1)->where('is_tcp_check', 1)->get();
+        $nodeList = SsNode::query()->where('status', 1)->where('is_tcp_check', 1)->where('is_nat', 0)->get();
         foreach ($nodeList as $node) {
             $tcpCheck = $this->tcpCheck($node->ip);
             if (false !== $tcpCheck) {
@@ -99,7 +99,7 @@ class AutoCheckNodeStatus extends Command
                 Log::info("【TCP阻断检测】" . $node->name . ' - ' . $node->ip . ' - ' . $text);
             }
 
-            // 10分钟内无节点负载信息且TCP检测认为不是宕机则认为是SSR(R)后端炸了
+            // 10分钟内无节点负载信息且TCP检测认为不是离线则认为是后端炸了
             $nodeTTL = SsNodeInfo::query()->where('node_id', $node->id)->where('log_time', '>=', strtotime("-10 minutes"))->orderBy('id', 'desc')->first();
             if ($tcpCheck !== 1 && !$nodeTTL) {
                 $this->notifyMaster($title, "节点**{$node->name}【{$node->ip}】**异常：**心跳异常**", $node->name, $node->server);
@@ -159,7 +159,7 @@ class AutoCheckNodeStatus extends Command
     private function notifyMaster($title, $content, $nodeName, $nodeServer)
     {
         $this->notifyMasterByEmail($title, $content, $nodeName, $nodeServer);
-        $this->notifyMasterByServerchan($title, $content);
+        ServerChan::send($title, $content);
     }
 
     /**
@@ -173,28 +173,8 @@ class AutoCheckNodeStatus extends Command
     private function notifyMasterByEmail($title, $content, $nodeName, $nodeServer)
     {
         if (self::$systemConfig['is_node_crash_warning'] && self::$systemConfig['crash_warning_email']) {
-            try {
-                Mail::to(self::$systemConfig['crash_warning_email'])->send(new nodeCrashWarning($nodeName, $nodeServer));
-                Helpers::addEmailLog(self::$systemConfig['crash_warning_email'], $title, $content);
-            } catch (\Exception $e) {
-                Helpers::addEmailLog(self::$systemConfig['crash_warning_email'], $title, $content, 0, $e->getMessage());
-            }
-        }
-    }
-
-    /**
-     * 通过ServerChan发微信消息提醒管理员
-     *
-     * @param string $title   消息标题
-     * @param string $content 消息内容
-     *
-     * @throws \GuzzleHttp\Exception\GuzzleException
-     */
-    private function notifyMasterByServerchan($title, $content)
-    {
-        if (self::$systemConfig['is_server_chan'] && self::$systemConfig['server_chan_key']) {
-            $serverChan = new ServerChan();
-            $serverChan->send($title, $content);
+            $logId = Helpers::addEmailLog(self::$systemConfig['crash_warning_email'], $title, $content);
+            Mail::to(self::$systemConfig['crash_warning_email'])->send(new nodeCrashWarning($logId, $nodeName, $nodeServer));
         }
     }
 
